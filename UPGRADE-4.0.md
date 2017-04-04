@@ -384,6 +384,9 @@ Security
    
  * The `LogoutUrlGenerator::registerListener()` method expects a 6th `$context = null` argument.
 
+ * The `AccessDecisionManager::setVoters()` method has been removed. Pass the
+   voters to the constructor instead.
+
 SecurityBundle
 --------------
 

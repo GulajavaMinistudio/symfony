@@ -386,21 +386,19 @@ class AutowirePassTest extends TestCase
         $container->getDefinition('arg_no_type_hint');
     }
 
-    /**
-     * @expectedException \Symfony\Component\DependencyInjection\Exception\RuntimeException
-     * @expectedExceptionMessage Cannot autowire service "not_really_optional_scalar": argument $foo of method Symfony\Component\DependencyInjection\Tests\Compiler\MultipleArgumentsOptionalScalarNotReallyOptional::__construct() must have a type-hint or be given a value explicitly.
-     */
-    public function testOptionalScalarNotReallyOptionalThrowException()
+    public function testOptionalScalarNotReallyOptionalUsesDefaultValue()
     {
         $container = new ContainerBuilder();
 
         $container->register('a', __NAMESPACE__.'\A');
         $container->register('lille', __NAMESPACE__.'\Lille');
-        $container->register('not_really_optional_scalar', __NAMESPACE__.'\MultipleArgumentsOptionalScalarNotReallyOptional')
+        $definition = $container->register('not_really_optional_scalar', __NAMESPACE__.'\MultipleArgumentsOptionalScalarNotReallyOptional')
             ->setAutowired(true);
 
         $pass = new AutowirePass();
         $pass->process($container);
+
+        $this->assertSame('default_val', $definition->getArgument(1));
     }
 
     public function testOptionalScalarArgsDontMessUpOrder()
@@ -444,10 +442,6 @@ class AutowirePassTest extends TestCase
             array(
                 new Reference('a'),
                 new Reference('lille'),
-                // third arg shouldn't *need* to be passed
-                // but that's hard to "pull of" with autowiring, so
-                // this assumes passing the default val is ok
-                'some_val',
             ),
             $definition->getArguments()
         );
@@ -617,29 +611,19 @@ class AutowirePassTest extends TestCase
         $this->assertEquals(array(new Reference('a'), '', new Reference('lille')), $container->getDefinition('foo')->getArguments());
     }
 
-    /**
-     * @dataProvider provideAutodiscoveredAutowiringOrder
-     *
-     * @expectedException \Symfony\Component\DependencyInjection\Exception\RuntimeException
-     * @expectedExceptionMEssage Unable to autowire argument of type "Symfony\Component\DependencyInjection\Tests\Compiler\CollisionInterface" for service "a". Multiple services exist for this interface: autowired.Symfony\Component\DependencyInjection\Tests\Compiler\CollisionA, autowired.Symfony\Component\DependencyInjection\Tests\Compiler\CollisionB.
-     */
-    public function testAutodiscoveredAutowiringOrder($class)
+    public function testWithFactory()
     {
         $container = new ContainerBuilder();
 
-        $container->register('a', __NAMESPACE__.'\\'.$class)
+        $container->register('foo', Foo::class);
+        $definition = $container->register('a', A::class)
+            ->setFactory(array(A::class, 'create'))
             ->setAutowired(true);
 
         $pass = new AutowirePass();
         $pass->process($container);
-    }
 
-    public function provideAutodiscoveredAutowiringOrder()
-    {
-        return array(
-            array('CannotBeAutowiredForwardOrder'),
-            array('CannotBeAutowiredReverseOrder'),
-        );
+        $this->assertEquals(array(new Reference('foo')), $definition->getArguments());
     }
 
     /**
@@ -650,7 +634,12 @@ class AutowirePassTest extends TestCase
     {
         $container = new ContainerBuilder();
 
-        $foo = $container->register('foo', NotWireable::class)->setAutowired(true);
+        $foo = $container->register('foo', NotWireable::class)->setAutowired(true)
+            ->addMethodCall('setBar', array())
+            ->addMethodCall('setOptionalNotAutowireable', array())
+            ->addMethodCall('setOptionalNoTypeHint', array())
+            ->addMethodCall('setOptionalArgNoAutowireable', array())
+        ;
 
         if ($method) {
             $foo->addMethodCall($method, array());
@@ -672,25 +661,8 @@ class AutowirePassTest extends TestCase
     {
         return array(
             array('setNotAutowireable', 'Cannot autowire service "foo": argument $n of method Symfony\Component\DependencyInjection\Tests\Compiler\NotWireable::setNotAutowireable() has type "Symfony\Component\DependencyInjection\Tests\Compiler\NotARealClass" but this class does not exist.'),
-            array('setBar', 'Cannot autowire service "foo": method Symfony\Component\DependencyInjection\Tests\Compiler\NotWireable::setBar() has only optional arguments, thus must be wired explicitly.'),
-            array('setOptionalNotAutowireable', 'Cannot autowire service "foo": method Symfony\Component\DependencyInjection\Tests\Compiler\NotWireable::setOptionalNotAutowireable() has only optional arguments, thus must be wired explicitly.'),
-            array('setOptionalNoTypeHint', 'Cannot autowire service "foo": method Symfony\Component\DependencyInjection\Tests\Compiler\NotWireable::setOptionalNoTypeHint() has only optional arguments, thus must be wired explicitly.'),
-            array('setOptionalArgNoAutowireable', 'Cannot autowire service "foo": method Symfony\Component\DependencyInjection\Tests\Compiler\NotWireable::setOptionalArgNoAutowireable() has only optional arguments, thus must be wired explicitly.'),
-            array(null, 'Cannot autowire service "foo": method Symfony\Component\DependencyInjection\Tests\Compiler\NotWireable::setProtectedMethod() must be public.'),
+            array(null, 'Cannot autowire service "foo": method "Symfony\Component\DependencyInjection\Tests\Compiler\NotWireable::setProtectedMethod()" must be public.'),
         );
-    }
-
-    public function testAutoregisterRestoresStateOnFailure()
-    {
-        $container = new ContainerBuilder();
-
-        $container->register('e', E::class)
-            ->setAutowired(true);
-
-        $pass = new AutowirePass();
-        $pass->process($container);
-
-        $this->assertSame(array('service_container', 'e'), array_keys($container->getDefinitions()));
     }
 
     /**
@@ -772,6 +744,9 @@ class Bar
 
 class A
 {
+    public static function create(Foo $foo)
+    {
+    }
 }
 
 class B extends A
