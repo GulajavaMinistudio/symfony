@@ -80,6 +80,8 @@ Debug
 DependencyInjection
 -------------------
 
+ * [BC BREAK] autowiring now happens only when a type-hint matches its corresponding FQCN id or alias. Please follow the suggestions provided by the exceptions thrown at compilation to upgrade your service configuration.
+
  * [BC BREAK] `_defaults` and `_instanceof` are now reserved service names in Yaml configurations. Please rename any services with that names.
 
  * [BC BREAK] non-numeric keys in methods and constructors arguments have never been supported and are now forbidden. Please remove them if you happen to have one.
@@ -129,6 +131,34 @@ Finder
 ------
 
  * The `ExceptionInterface` has been deprecated and will be removed in 4.0.
+
+Form
+----
+
+ * Using the "choices" option in ``CountryType``, ``CurrencyType``, ``LanguageType``,
+   ``LocaleType``, and ``TimezoneType`` without overriding the ``choice_loader``
+   option has been deprecated and will be ignored in 4.0.
+   
+   Before:
+   ```php
+   $builder->add('custom_locales', LocaleType::class, array(
+       'choices' => $availableLocales,
+   ));
+   ```
+   
+   After:
+   ```php
+   $builder->add('custom_locales', LocaleType::class, array(
+       'choices' => $availableLocales,
+       'choice_loader' => null,
+   ));
+   // or
+   $builder->add('custom_locales', LocaleType::class, array(
+       'choice_loader' => new CallbackChoiceLoader(function () {
+           return $this->getAvailableLocales();
+       }),
+   ));
+   ```
 
 FrameworkBundle
 ---------------

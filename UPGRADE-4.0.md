@@ -73,6 +73,8 @@ Debug
 DependencyInjection
 -------------------
 
+ * Autowiring now happens only when a type-hint matches its corresponding FQCN id or alias.
+
  * `_defaults` and `_instanceof` are now reserved service names in Yaml configurations. Please rename any services with that names.
 
  * Non-numeric keys in methods and constructors arguments have never been supported and are now forbidden. Please remove them if you happen to have one.
@@ -191,6 +193,31 @@ Form
    if ($form->isSubmitted() && $form->isValid()) {
        // ...
    }
+   ```
+
+ * Using the "choices" option in ``CountryType``, ``CurrencyType``, ``LanguageType``,
+   ``LocaleType``, and ``TimezoneType`` without overriding the ``choice_loader``
+   option is now ignored.
+   
+   Before:
+   ```php
+   $builder->add('custom_locales', LocaleType::class, array(
+       'choices' => $availableLocales,
+   ));
+   ```
+   
+   After:
+   ```php
+   $builder->add('custom_locales', LocaleType::class, array(
+       'choices' => $availableLocales,
+       'choice_loader' => null,
+   ));
+   // or
+   $builder->add('custom_locales', LocaleType::class, array(
+       'choice_loader' => new CallbackChoiceLoader(function () {
+           return $this->getAvailableLocales();
+       }),
+   ));
    ```
 
 FrameworkBundle

@@ -172,7 +172,7 @@ class XmlFileLoader extends FileLoader
             }
         }
         if ($defaultsNode->hasAttribute('autowire')) {
-            $defaults['autowire'] = $this->getAutowired($defaultsNode->getAttribute('autowire'), $file);
+            $defaults['autowire'] = XmlUtils::phpize($defaultsNode->getAttribute('autowire'));
         }
         if ($defaultsNode->hasAttribute('public')) {
             $defaults['public'] = XmlUtils::phpize($defaultsNode->getAttribute('public'));
@@ -238,7 +238,7 @@ class XmlFileLoader extends FileLoader
         }
 
         if ($value = $service->getAttribute('autowire')) {
-            $definition->setAutowired($this->getAutowired($value, $file));
+            $definition->setAutowired(XmlUtils::phpize($value));
         } elseif (isset($defaults['autowire'])) {
             $definition->setAutowired($defaults['autowire']);
         }
@@ -259,11 +259,7 @@ class XmlFileLoader extends FileLoader
             if ($function = $factory->getAttribute('function')) {
                 $definition->setFactory($function);
             } else {
-                $factoryService = $this->getChildren($factory, 'service');
-
-                if (isset($factoryService[0])) {
-                    $class = $this->parseDefinition($factoryService[0], $file);
-                } elseif ($childService = $factory->getAttribute('service')) {
+                if ($childService = $factory->getAttribute('service')) {
                     $class = new Reference($childService, ContainerInterface::EXCEPTION_ON_INVALID_REFERENCE);
                 } else {
                     $class = $factory->hasAttribute('class') ? $factory->getAttribute('class') : null;
@@ -278,11 +274,7 @@ class XmlFileLoader extends FileLoader
             if ($function = $configurator->getAttribute('function')) {
                 $definition->setConfigurator($function);
             } else {
-                $configuratorService = $this->getChildren($configurator, 'service');
-
-                if (isset($configuratorService[0])) {
-                    $class = $this->parseDefinition($configuratorService[0], $file);
-                } elseif ($childService = $configurator->getAttribute('service')) {
+                if ($childService = $configurator->getAttribute('service')) {
                     $class = new Reference($childService, ContainerInterface::EXCEPTION_ON_INVALID_REFERENCE);
                 } else {
                     $class = $configurator->getAttribute('class');
@@ -379,13 +371,14 @@ class XmlFileLoader extends FileLoader
         $xpath->registerNamespace('container', self::NS);
 
         // anonymous services as arguments/properties
-        if (false !== $nodes = $xpath->query('//container:argument[@type="service"][not(@id)]|//container:property[@type="service"][not(@id)]')) {
+        if (false !== $nodes = $xpath->query('//container:argument[@type="service"][not(@id)]|//container:property[@type="service"][not(@id)]|//container:factory[not(@service)]|//container:configurator[not(@service)]')) {
             foreach ($nodes as $node) {
-                // give it a unique name
-                $id = sprintf('%d_%s', ++$count, hash('sha256', $file));
-                $node->setAttribute('id', $id);
-
                 if ($services = $this->getChildren($node, 'service')) {
+                    // give it a unique name
+                    $id = sprintf('%d_%s', ++$count, hash('sha256', $file));
+                    $node->setAttribute('id', $id);
+                    $node->setAttribute('service', $id);
+
                     $definitions[$id] = array($services[0], $file, false);
                     $services[0]->setAttribute('id', $id);
 
@@ -417,8 +410,6 @@ class XmlFileLoader extends FileLoader
                 $tmpDomElement = new \DOMElement('_services', null, self::NS);
                 $domElement->parentNode->replaceChild($tmpDomElement, $domElement);
                 $tmpDomElement->setAttribute('id', $id);
-            } else {
-                $domElement->parentNode->removeChild($domElement);
             }
         }
     }
@@ -663,23 +654,6 @@ EOF
 
             $this->container->loadFromExtension($node->namespaceURI, $values);
         }
-    }
-
-    private function getAutowired($value, $file)
-    {
-        if (is_bool($value = XmlUtils::phpize($value))) {
-            return $value;
-        }
-
-        if ('by-type' === $value) {
-            return Definition::AUTOWIRE_BY_TYPE;
-        }
-
-        if ('by-id' === $value) {
-            return Definition::AUTOWIRE_BY_ID;
-        }
-
-        throw new InvalidArgumentException(sprintf('Invalid autowire attribute: "by-type", "by-id", "true" or "false" expected, "%s" given in "%s".', $value, $file));
     }
 
     /**
