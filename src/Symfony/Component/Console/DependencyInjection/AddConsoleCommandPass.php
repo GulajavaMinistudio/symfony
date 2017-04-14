@@ -25,16 +25,11 @@ class AddConsoleCommandPass implements CompilerPassInterface
 {
     public function process(ContainerBuilder $container)
     {
-        $commandServices = $container->findTaggedServiceIds('console.command');
+        $commandServices = $container->findTaggedServiceIds('console.command', true);
         $serviceIds = array();
 
         foreach ($commandServices as $id => $tags) {
             $definition = $container->getDefinition($id);
-
-            if ($definition->isAbstract()) {
-                continue;
-            }
-
             $class = $container->getParameterBag()->resolveValue($definition->getClass());
 
             if (!$r = $container->getReflectionClass($class)) {
@@ -44,12 +39,16 @@ class AddConsoleCommandPass implements CompilerPassInterface
                 throw new InvalidArgumentException(sprintf('The service "%s" tagged "console.command" must be a subclass of "%s".', $id, Command::class));
             }
 
-            $serviceId = 'console.command.'.strtolower(str_replace('\\', '_', $class));
-            if ($container->hasAlias($serviceId)) {
-                $serviceId = $serviceId.'_'.$id;
+            if (!$definition->isPublic()) {
+                $serviceId = 'console.command.'.strtolower(str_replace('\\', '_', $class));
+                if ($container->hasAlias($serviceId)) {
+                    $serviceId = $serviceId.'_'.$id;
+                }
+                $container->setAlias($serviceId, $id);
+                $id = $serviceId;
             }
-            $container->setAlias($serviceId, $id);
-            $serviceIds[] = $definition->isPublic() ? $id : $serviceId;
+
+            $serviceIds[] = $id;
         }
 
         $container->setParameter('console.command.ids', $serviceIds);
