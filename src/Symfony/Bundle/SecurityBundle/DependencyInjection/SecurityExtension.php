@@ -19,13 +19,13 @@ use Symfony\Component\DependencyInjection\Alias;
 use Symfony\Component\DependencyInjection\Argument\IteratorArgument;
 use Symfony\Component\DependencyInjection\ChildDefinition;
 use Symfony\Component\DependencyInjection\Compiler\ServiceLocatorTagPass;
-use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\HttpKernel\DependencyInjection\Extension;
 use Symfony\Component\DependencyInjection\Loader\XmlFileLoader;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Reference;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\Security\Core\Authorization\ExpressionLanguage;
+use Symfony\Component\Security\Core\Authorization\Voter\VoterInterface;
 
 /**
  * SecurityExtension.
@@ -109,6 +109,9 @@ class SecurityExtension extends Extension
         if (isset($config['acl'])) {
             $this->aclLoad($config['acl'], $container);
         }
+
+        $container->registerForAutoconfiguration(VoterInterface::class)
+            ->addTag('security.voter');
 
         if (PHP_VERSION_ID < 70000) {
             // add some required classes for compilation
@@ -245,10 +248,16 @@ class SecurityExtension extends Extension
         $arguments[1] = $userProviders;
         $definition->setArguments($arguments);
 
+        $customUserChecker = false;
+
         // load firewall map
         $mapDef = $container->getDefinition('security.firewall.map');
         $map = $authenticationProviders = $contextRefs = array();
         foreach ($firewalls as $name => $firewall) {
+            if (isset($firewall['user_checker']) && 'security.user_checker' !== $firewall['user_checker']) {
+                $customUserChecker = true;
+            }
+
             $configId = 'security.firewall.map.config.'.$name;
 
             list($matcher, $listeners, $exceptionListener) = $this->createFirewall($container, $name, $firewall, $authenticationProviders, $providerIds, $configId);
@@ -275,6 +284,11 @@ class SecurityExtension extends Extension
             ->getDefinition('security.authentication.manager')
             ->replaceArgument(0, new IteratorArgument($authenticationProviders))
         ;
+
+        // register an autowire alias for the UserCheckerInterface if no custom user checker service is configured
+        if (!$customUserChecker) {
+            $container->setAlias('Symfony\Component\Security\Core\User\UserCheckerInterface', new Alias('security.user_checker', false));
+        }
     }
 
     private function createFirewall(ContainerBuilder $container, $id, $firewall, &$authenticationProviders, $providerIds, $configId)

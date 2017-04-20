@@ -366,6 +366,14 @@ HttpFoundation
 HttpKernel
 ----------
 
+ * Removed the `kernel.root_dir` parameter. Use the `kernel.project_dir` parameter
+   instead.
+
+ * Removed the `Kernel::getRootDir()` method. Use the `Kernel::getProjectDir()`
+   method instead.
+
+ * The `Extension::addClassesToCompile()` method has been removed.
+
  * Possibility to pass non-scalar values as URI attributes to the ESI and SSI
    renderers has been removed. The inline fragment renderer should be used with
    non-scalar attributes.

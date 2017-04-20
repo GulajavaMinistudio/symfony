@@ -255,6 +255,14 @@ HttpFoundation
 HttpKernel
 -----------
 
+ * Deprecated the `kernel.root_dir` parameter. Use the new `kernel.project_dir`
+   parameter instead.
+
+ * Deprecated the `Kernel::getRootDir()` method. Use the new `Kernel::getProjectDir()`
+   method instead.
+
+ * The `Extension::addClassesToCompile()` method has been deprecated and will be removed in 4.0.
+
  * The `Psr6CacheClearer::addPool()` method has been deprecated. Pass an array
    of pools indexed by name to the constructor instead.
 
