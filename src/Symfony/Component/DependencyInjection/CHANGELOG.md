@@ -1,6 +1,11 @@
 CHANGELOG
 =========
 
+4.0.0
+-----
+
+ * removed `Container::isFrozen`
+
 3.3.0
 -----
 
@@ -37,6 +42,7 @@ CHANGELOG
  * deprecated the ability to set or unset a private service with the `Container::set()` method
  * deprecated the ability to check for the existence of a private service with the `Container::has()` method
  * deprecated the ability to request a private service with the `Container::get()` method
+ * deprecated support for generating a dumped `Container` without populating the method map
 
 3.0.0
 -----

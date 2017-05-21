@@ -74,16 +74,6 @@ class ProjectServiceContainer extends Container
     }
 
     /**
-     * {@inheritdoc}
-     */
-    public function isFrozen()
-    {
-        @trigger_error(sprintf('The %s() method is deprecated since version 3.3 and will be removed in 4.0. Use the isCompiled() method instead.', __METHOD__), E_USER_DEPRECATED);
-
-        return true;
-    }
-
-    /**
      * Gets the 'bar' service.
      *
      * This service is shared.
@@ -326,7 +316,9 @@ class ProjectServiceContainer extends Container
         return $this->services['lazy_context'] = new \LazyContext(new RewindableGenerator(function () {
             yield 'k1' => ${($_ = isset($this->services['foo.baz']) ? $this->services['foo.baz'] : $this->get('foo.baz')) && false ?: '_'};
             yield 'k2' => $this;
-        }, 2));
+        }, 2), new RewindableGenerator(function () {
+            return new \EmptyIterator();
+        }, 0));
     }
 
     /**
@@ -341,7 +333,9 @@ class ProjectServiceContainer extends Container
     {
         return $this->services['lazy_context_ignore_invalid_ref'] = new \LazyContext(new RewindableGenerator(function () {
             yield 0 => ${($_ = isset($this->services['foo.baz']) ? $this->services['foo.baz'] : $this->get('foo.baz')) && false ?: '_'};
-        }, 1));
+        }, 1), new RewindableGenerator(function () {
+            return new \EmptyIterator();
+        }, 0));
     }
 
     /**

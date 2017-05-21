@@ -12,12 +12,12 @@
 namespace Symfony\Bundle\SecurityBundle\DataCollector;
 
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
+use Symfony\Component\Security\Core\Role\Role;
 use Symfony\Component\Security\Core\Role\RoleHierarchyInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\DataCollector\DataCollector;
 use Symfony\Component\HttpKernel\DataCollector\LateDataCollectorInterface;
-use Symfony\Component\Security\Core\Role\RoleInterface;
 use Symfony\Component\Security\Http\Logout\LogoutUrlGenerator;
 use Symfony\Component\Security\Core\Authorization\AccessDecisionManagerInterface;
 use Symfony\Component\Security\Core\Authorization\TraceableAccessDecisionManager;
@@ -117,8 +117,8 @@ class SecurityDataCollector extends DataCollector implements LateDataCollectorIn
                 'token_class' => $this->hasVarDumper ? new ClassStub(get_class($token)) : get_class($token),
                 'logout_url' => $logoutUrl,
                 'user' => $token->getUsername(),
-                'roles' => array_map(function (RoleInterface $role) { return $role->getRole(); }, $assignedRoles),
-                'inherited_roles' => array_map(function (RoleInterface $role) { return $role->getRole(); }, $inheritedRoles),
+                'roles' => array_map(function (Role $role) { return $role->getRole(); }, $assignedRoles),
+                'inherited_roles' => array_map(function (Role $role) { return $role->getRole(); }, $inheritedRoles),
                 'supports_role_hierarchy' => null !== $this->roleHierarchy,
             );
         }

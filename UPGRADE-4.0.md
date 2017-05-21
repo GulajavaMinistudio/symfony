@@ -145,6 +145,8 @@ Finder
 ------
 
  * The `ExceptionInterface` has been removed.
+ * The `Symfony\Component\Finder\Iterator\FilterIterator` class has been
+   removed as it used to fix a bug which existed before version 5.5.23/5.6.7
 
 Form
 ----
@@ -426,7 +428,7 @@ Security
  * The `RoleInterface` has been removed. Extend the `Symfony\Component\Security\Core\Role\Role`
    class instead.
 
- * The `LogoutUrlGenerator::registerListener()` method expects a 6th `$context = null` argument.
+ * The `LogoutUrlGenerator::registerListener()` method expects a 6th `string $context = null` argument.
 
  * The `AccessDecisionManager::setVoters()` method has been removed. Pass the
    voters to the constructor instead.
@@ -506,6 +508,9 @@ TwigBridge
 
 Validator
 ---------
+
+ * The default value of the `strict` option of the `Choice` constraint was changed
+   to `true`. Using any other value will throw an exception.
 
  * The `DateTimeValidator::PATTERN` constant was removed.
 
