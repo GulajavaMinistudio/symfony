@@ -49,10 +49,6 @@ class ProxyHelper
                     $k = substr($k, 1);
                 }
             } catch (\ReflectionException $e) {
-                if ($type && $p->allowsNull() && !class_exists('ReflectionNamedType', false)) {
-                    $k .= ' = null';
-                    $k = substr($k, 1);
-                }
             }
 
             $signature[] = $k;
@@ -80,7 +76,7 @@ class ProxyHelper
             return;
         }
         if (!is_string($type)) {
-            $name = $type instanceof \ReflectionNamedType ? $type->getName() : $type->__toString();
+            $name = $type->getName();
 
             if ($type->isBuiltin()) {
                 return $noBuiltin ? null : $name;

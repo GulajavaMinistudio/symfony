@@ -130,14 +130,13 @@ class PhpDumperTest extends TestCase
     }
 
     /**
-     * @group legacy
-     * @expectedDeprecation Dumping an uncompiled ContainerBuilder is deprecated since version 3.3 and will not be supported anymore in 4.0. Compile the container beforehand.
+     * @expectedException \Symfony\Component\DependencyInjection\Exception\LogicException
+     * @expectedExceptionMessage Cannot dump an uncompiled container.
      */
     public function testAddServiceWithoutCompilation()
     {
         $container = include self::$fixturesPath.'/containers/container9.php';
-        $dumper = new PhpDumper($container);
-        $this->assertEquals(str_replace('%path%', str_replace('\\', '\\\\', self::$fixturesPath.DIRECTORY_SEPARATOR.'includes'.DIRECTORY_SEPARATOR), file_get_contents(self::$fixturesPath.'/php/services9.php')), $dumper->dump(), '->dump() dumps services');
+        new PhpDumper($container);
     }
 
     public function testAddService()
@@ -482,9 +481,6 @@ class PhpDumperTest extends TestCase
         $this->assertSame('reflection.Symfony\Component\DependencyInjection\Tests\Fixtures\Container31\Foo', (string) array_pop($res));
     }
 
-    /**
-     * @requires PHP 7.1
-     */
     public function testClosureProxyWithVoidReturnType()
     {
         $container = include self::$fixturesPath.'/containers/container_dump_proxy_with_void_return_type.php';
@@ -497,9 +493,6 @@ class PhpDumperTest extends TestCase
         $this->assertSame('reflection.Symfony\Component\DependencyInjection\Tests\Fixtures\ContainerVoid\Foo', (string) array_pop($res));
     }
 
-    /**
-     * @requires PHP 7.1
-     */
     public function testClosureProxyPhp71()
     {
         $container = include self::$fixturesPath.'/containers/container32.php';
