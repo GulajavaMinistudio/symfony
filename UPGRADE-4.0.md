@@ -128,6 +128,8 @@ DependencyInjection
  * The ``strict`` attribute in service arguments has been removed.
    The attribute is ignored since 3.0, so you can simply remove it.
 
+ * Top-level anonymous services in XML are no longer supported.
+
 EventDispatcher
 ---------------
 
@@ -296,15 +298,6 @@ FrameworkBundle
    removed. Use the `Symfony\Component\PropertyInfo\DependencyInjection\PropertyInfoPass`
    class instead.
 
- * The `ConstraintValidatorFactory::$validators` and `$container` properties
-   have been removed.
-
- * Extending `ConstraintValidatorFactory` is not supported anymore.
-
- * Passing an array of validators or validator aliases as the second argument of 
-   `ConstraintValidatorFactory::__construct()` has been removed.
-   Use the service locator instead.
-
  * Class parameters related to routing have been removed
     * router.options.generator_class
     * router.options.generator_base_class
@@ -337,6 +330,9 @@ FrameworkBundle
  * The `Symfony\Bundle\FrameworkBundle\DependencyInjection\Compiler\ValidateWorkflowsPass` class
    has been removed. Use the `Symfony\Component\Workflow\DependencyInjection\ValidateWorkflowsPass`
    class instead.
+
+ * The `Symfony\Bundle\FrameworkBundle\Validator\ConstraintValidatorFactory` class has been removed.
+   Use `Symfony\Component\Validator\ContainerConstraintValidatorFactory` instead.
 
 HttpFoundation
 --------------
