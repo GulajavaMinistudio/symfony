@@ -4,6 +4,8 @@ CHANGELOG
 4.0.0
 -----
 
+ * The behavior of the non-specific tag `!` is changed and now forces
+   non-evaluating your values.
  * complex mappings will throw a `ParseException`
  * support for the comma as a group separator for floats has been dropped, use
    the underscore instead
@@ -21,6 +23,12 @@ CHANGELOG
    the parser and dumper is no longer supported, pass bitmask flags instead
  * the constructor arguments of the `Parser` class have been removed
  * the `Inline` class is internal and no longer part of the BC promise
+
+3.4.0
+-----
+
+ * Deprecated using the non-specific tag `!` as its behavior will change in 4.0.
+   It will force non-evaluating your values in 4.0. Use plain integers or `!!float` instead.
 
 3.3.0
 -----

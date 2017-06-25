@@ -910,10 +910,10 @@ documents: 2
 test: Explicit typing
 yaml: |
    integer: 12
-   also int: ! "12"
+   no int: ! 12
    string: !str 12
 php: |
-   array( 'integer' => 12, 'also int' => 12, 'string' => '12' )
+   array( 'integer' => 12, 'no int' => '12', 'string' => '12' )
 ---
 test: Private types
 todo: true
