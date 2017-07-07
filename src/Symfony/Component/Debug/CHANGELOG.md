@@ -5,6 +5,12 @@ CHANGELOG
 -----
 
 * removed the symfony_debug extension
+* removed `ContextErrorException`
+
+3.4.0
+-----
+
+* deprecated `ErrorHandler::stackErrors()` and `ErrorHandler::unstackErrors()`
 
 3.3.0
 -----
