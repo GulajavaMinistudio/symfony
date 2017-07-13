@@ -19,6 +19,7 @@ CHANGELOG
  * Removed absolute template paths support in the template name parser
  * Removed support of the `KERNEL_DIR` environment variable with `KernelTestCase::getKernelClass()`.
  * Removed the `KernelTestCase::getPhpUnitXmlDir()` and `KernelTestCase::getPhpUnitCliConfigArgument()` methods.
+ * Removed the "framework.validation.cache" configuration option. Configure the "cache.validator" service under "framework.cache.pools" instead.
 
 3.4.0
 -----
@@ -37,6 +38,8 @@ CHANGELOG
    `Symfony\Component\Translation\DependencyInjection\TranslationExtractorPass` instead
  * Deprecated `TranslatorPass`, use 
    `Symfony\Component\Translation\DependencyInjection\TranslatorPass` instead
+ * Added `command` attribute to the `console.command` tag which takes the command
+   name as value, using it makes the command lazy
 
 3.3.0
 -----
