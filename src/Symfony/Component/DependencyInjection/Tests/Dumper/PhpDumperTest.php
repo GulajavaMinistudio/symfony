@@ -267,8 +267,8 @@ class PhpDumperTest extends TestCase
     }
 
     /**
-     * @group legacy
-     * @expectedDeprecation Setting the "bar" pre-defined service is deprecated since Symfony 3.3 and won't be supported anymore in Symfony 4.0.
+     * @expectedException \Symfony\Component\DependencyInjection\Exception\InvalidArgumentException
+     * @expectedExceptionMessage You cannot set the pre-defined service "bar".
      */
     public function testOverrideServiceWhenUsingADumpedContainer()
     {
@@ -277,25 +277,6 @@ class PhpDumperTest extends TestCase
 
         $container = new \ProjectServiceContainer();
         $container->set('bar', $bar = new \stdClass());
-        $container->setParameter('foo_bar', 'foo_bar');
-
-        $this->assertSame($bar, $container->get('bar'), '->set() overrides an already defined service');
-    }
-
-    /**
-     * @group legacy
-     * @expectedDeprecation Setting the "bar" pre-defined service is deprecated since Symfony 3.3 and won't be supported anymore in Symfony 4.0.
-     */
-    public function testOverrideServiceWhenUsingADumpedContainerAndServiceIsUsedFromAnotherOne()
-    {
-        require_once self::$fixturesPath.'/php/services9.php';
-        require_once self::$fixturesPath.'/includes/foo.php';
-        require_once self::$fixturesPath.'/includes/classes.php';
-
-        $container = new \ProjectServiceContainer();
-        $container->set('bar', $bar = new \stdClass());
-
-        $this->assertSame($bar, $container->get('foo')->bar, '->set() overrides an already defined service');
     }
 
     /**
@@ -610,5 +591,31 @@ class PhpDumperTest extends TestCase
         $container = new \Symfony_DI_PhpDumper_Test_Literal_Class_With_Root_Namespace();
 
         $this->assertInstanceOf('stdClass', $container->get('foo'));
+    }
+
+    /**
+     * This test checks the trigger of a deprecation note and should not be removed in major releases.
+     *
+     * @group legacy
+     * @expectedDeprecation The "foo" service is deprecated. You should stop using it, as it will soon be removed.
+     */
+    public function testPrivateServiceTriggersDeprecation()
+    {
+        $container = new ContainerBuilder();
+        $container->register('foo', 'stdClass')
+            ->setPublic(false)
+            ->setDeprecated(true);
+        $container->register('bar', 'stdClass')
+            ->setPublic(true)
+            ->setProperty('foo', new Reference('foo'));
+
+        $container->compile();
+
+        $dumper = new PhpDumper($container);
+        eval('?>'.$dumper->dump(array('class' => 'Symfony_DI_PhpDumper_Test_Private_Service_Triggers_Deprecation')));
+
+        $container = new \Symfony_DI_PhpDumper_Test_Private_Service_Triggers_Deprecation();
+
+        $container->get('bar');
     }
 }
