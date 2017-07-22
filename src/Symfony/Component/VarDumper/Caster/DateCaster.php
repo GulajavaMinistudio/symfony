@@ -27,7 +27,7 @@ class DateCaster
         $fromNow = (new \DateTime())->diff($d);
 
         $title = $d->format('l, F j, Y')
-            ."\n".$fromNow->format('%R').(ltrim($fromNow->format('%yy %mm %dd %H:%I:%Ss'), ' 0ymd:s') ?: '0s').' from now'
+            ."\n".$fromNow->format('%R').self::formatInterval($fromNow).' from now'
             .($location ? ($d->format('I') ? "\nDST On" : "\nDST Off") : '')
         ;
 
@@ -37,5 +37,41 @@ class DateCaster
         $stub->class .= $d->format(' @U');
 
         return $a;
+    }
+
+    public static function castInterval(\DateInterval $interval, array $a, Stub $stub, $isNested, $filter)
+    {
+        $now = new \DateTimeImmutable();
+        $numberOfSeconds = $now->add($interval)->getTimestamp() - $now->getTimestamp();
+        $title = number_format($numberOfSeconds, 0, '.', ' ').'s';
+
+        $i = array(Caster::PREFIX_VIRTUAL.'interval' => new ConstStub(self::formatInterval($interval), $title));
+
+        return $filter & Caster::EXCLUDE_VERBOSE ? $i : $i + $a;
+    }
+
+    private static function formatInterval(\DateInterval $i)
+    {
+        $format = '%R '
+            .($i->y ? '%yy ' : '')
+            .($i->m ? '%mm ' : '')
+            .($i->d ? '%dd ' : '')
+            .($i->h || $i->i || $i->s || $i->f ? '%H:%I:%S.%F' : '')
+        ;
+
+        $format = '%R ' === $format ? '0s' : $format;
+
+        return $i->format(rtrim($format));
+    }
+
+    public static function castTimeZone(\DateTimeZone $timeZone, array $a, Stub $stub, $isNested, $filter)
+    {
+        $location = $timeZone->getLocation();
+        $formatted = (new \Datetime('now', $timeZone))->format($location ? 'e (P)' : 'P');
+        $title = $location && extension_loaded('intl') ? \Locale::getDisplayRegion('-'.$location['country_code']) : '';
+
+        $z = array(Caster::PREFIX_VIRTUAL.'timezone' => new ConstStub($formatted, $title));
+
+        return $filter & Caster::EXCLUDE_VERBOSE ? $z : $z + $a;
     }
 }
