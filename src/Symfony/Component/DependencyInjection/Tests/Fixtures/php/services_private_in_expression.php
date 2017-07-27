@@ -29,7 +29,7 @@ class ProjectServiceContainer extends Container
     {
         $this->services = $this->privates = array();
         $this->methodMap = array(
-            'bar' => 'getBarService',
+            'public_foo' => 'getPublicFooService',
         );
 
         $this->aliases = array();
@@ -61,15 +61,22 @@ class ProjectServiceContainer extends Container
     }
 
     /**
-     * Gets the public 'bar' shared service.
+     * Gets the public 'public_foo' shared service.
      *
      * @return \stdClass
      */
-    protected function getBarService()
+    protected function getPublicFooService()
     {
-        $a = new \stdClass();
-        $a->add($this);
+        return $this->services['public_foo'] = new \stdClass(($this->privates['private_foo'] ?? $this->getPrivateFooService()));
+    }
 
-        return $this->services['bar'] = new \stdClass($a);
+    /**
+     * Gets the private 'private_foo' shared service.
+     *
+     * @return \stdClass
+     */
+    private function getPrivateFooService()
+    {
+        return $this->privates['private_foo'] = new \stdClass();
     }
 }
