@@ -67,7 +67,7 @@ class ProxyDumperTest extends TestCase
 
         $definition->setLazy(true);
 
-        $code = $this->dumper->getProxyFactoryCode($definition, 'foo', 'getFoo2Service');
+        $code = $this->dumper->getProxyFactoryCode($definition, 'foo', '$this->getFoo2Service(false)');
 
         $this->assertStringMatchesFormat(
             '%wif ($lazyLoad) {%wreturn $this->services[\'foo\'] =%s'
@@ -81,7 +81,7 @@ class ProxyDumperTest extends TestCase
 
     /**
      * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessage Missing name of method to call to construct the service "foo".
+     * @expectedExceptionMessage Missing factory code to construct the service "foo".
      */
     public function testGetProxyFactoryCodeWithoutCustomMethod()
     {
