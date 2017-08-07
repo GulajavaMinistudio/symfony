@@ -13,6 +13,13 @@ namespace Symfony\Bundle\FrameworkBundle\DependencyInjection;
 
 use Doctrine\Common\Annotations\Reader;
 use Symfony\Bridge\Monolog\Processor\DebugProcessor;
+use Symfony\Bundle\FrameworkBundle\Command\RouterDebugCommand;
+use Symfony\Bundle\FrameworkBundle\Command\RouterMatchCommand;
+use Symfony\Bundle\FrameworkBundle\Command\TranslationDebugCommand;
+use Symfony\Bundle\FrameworkBundle\Command\TranslationUpdateCommand;
+use Symfony\Bundle\FrameworkBundle\Command\WorkflowDumpCommand;
+use Symfony\Bundle\FrameworkBundle\Command\XliffLintCommand;
+use Symfony\Bundle\FrameworkBundle\Command\YamlLintCommand;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use Symfony\Bundle\FrameworkBundle\Routing\AnnotatedRouteControllerLoader;
@@ -62,10 +69,12 @@ use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 use Symfony\Component\Serializer\Normalizer\JsonSerializableNormalizer;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 use Symfony\Component\Stopwatch\Stopwatch;
+use Symfony\Component\Translation\Command\XliffLintCommand as BaseXliffLintCommand;
 use Symfony\Component\Validator\ConstraintValidatorInterface;
 use Symfony\Component\Validator\ObjectInitializerInterface;
 use Symfony\Component\WebLink\HttpHeaderSerializer;
 use Symfony\Component\Workflow;
+use Symfony\Component\Yaml\Command\LintCommand as BaseYamlLintCommand;
 
 /**
  * FrameworkExtension.
@@ -106,6 +115,13 @@ class FrameworkExtension extends Extension
 
         if (class_exists(Application::class)) {
             $loader->load('console.xml');
+
+            if (!class_exists(BaseXliffLintCommand::class)) {
+                $container->removeDefinition(XliffLintCommand::class);
+            }
+            if (!class_exists(BaseYamlLintCommand::class)) {
+                $container->removeDefinition(YamlLintCommand::class);
+            }
         }
 
         // Property access is used by both the Form and the Validator component
@@ -213,11 +229,7 @@ class FrameworkExtension extends Extension
         $this->registerCacheConfiguration($config['cache'], $container);
         $this->registerWorkflowConfiguration($config['workflows'], $container, $loader);
         $this->registerDebugConfiguration($config['php_errors'], $container, $loader);
-
-        if ($this->isConfigEnabled($container, $config['router'])) {
-            $this->registerRouterConfiguration($config['router'], $container, $loader);
-        }
-
+        $this->registerRouterConfiguration($config['router'], $container, $loader);
         $this->registerAnnotationsConfiguration($config['annotations'], $container, $loader);
         $this->registerPropertyAccessConfiguration($config['property_access'], $container);
 
@@ -238,8 +250,8 @@ class FrameworkExtension extends Extension
         }
 
         $this->addAnnotatedClassesToCompile(array(
-            '**Bundle\\Controller\\',
-            '**Bundle\\Entity\\',
+            '**\\Controller\\',
+            '**\\Entity\\',
 
             // Added explicitly so that we don't rely on the class map being dumped to make it work
             'Symfony\\Bundle\\FrameworkBundle\\Controller\\Controller',
@@ -462,6 +474,10 @@ class FrameworkExtension extends Extension
     private function registerWorkflowConfiguration(array $workflows, ContainerBuilder $container, XmlFileLoader $loader)
     {
         if (!$workflows) {
+            if (!class_exists(Workflow\Workflow::class)) {
+                $container->removeDefinition(WorkflowDumpCommand::class);
+            }
+
             return;
         }
 
@@ -639,6 +655,13 @@ class FrameworkExtension extends Extension
      */
     private function registerRouterConfiguration(array $config, ContainerBuilder $container, XmlFileLoader $loader)
     {
+        if (!$this->isConfigEnabled($container, $config)) {
+            $container->removeDefinition(RouterDebugCommand::class);
+            $container->removeDefinition(RouterMatchCommand::class);
+
+            return;
+        }
+
         $loader->load('routing.xml');
 
         $container->setParameter('router.resource', $config['resource']);
@@ -927,6 +950,9 @@ class FrameworkExtension extends Extension
     private function registerTranslatorConfiguration(array $config, ContainerBuilder $container, LoaderInterface $loader)
     {
         if (!$this->isConfigEnabled($container, $config)) {
+            $container->removeDefinition(TranslationDebugCommand::class);
+            $container->removeDefinition(TranslationUpdateCommand::class);
+
             return;
         }
 
