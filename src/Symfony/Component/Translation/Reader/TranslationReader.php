@@ -9,18 +9,18 @@
  * file that was distributed with this source code.
  */
 
-namespace Symfony\Bundle\FrameworkBundle\Translation;
+namespace Symfony\Component\Translation\Reader;
 
 use Symfony\Component\Finder\Finder;
-use Symfony\Component\Translation\MessageCatalogue;
 use Symfony\Component\Translation\Loader\LoaderInterface;
+use Symfony\Component\Translation\MessageCatalogue;
 
 /**
- * TranslationLoader loads translation messages from translation files.
+ * TranslationReader reads translation messages from translation files.
  *
  * @author Michel Salib <michelsalib@hotmail.com>
  */
-class TranslationLoader
+class TranslationReader implements TranslationReaderInterface
 {
     /**
      * Loaders used for import.
@@ -41,12 +41,9 @@ class TranslationLoader
     }
 
     /**
-     * Loads translation messages from a directory to the catalogue.
-     *
-     * @param string           $directory the directory to look into
-     * @param MessageCatalogue $catalogue the catalogue
+     * {@inheritdoc}
      */
-    public function loadMessages($directory, MessageCatalogue $catalogue)
+    public function read($directory, MessageCatalogue $catalogue)
     {
         if (!is_dir($directory)) {
             return;
