@@ -50,6 +50,8 @@ DependencyInjection
 
  * Top-level anonymous services in XML are deprecated and will throw an exception in Symfony 4.0.
 
+ * Case insensitivity of parameter names is deprecated and will be removed in 4.0.
+
 Debug
 -----
 
@@ -151,6 +153,8 @@ HttpKernel
 
  * The `getCacheDir()` method of your kernel should not be called while building the container.
    Use the `%kernel.cache_dir%` parameter instead. Not doing so may break the `cache:clear` command.
+
+ * The `Symfony\Component\HttpKernel\Config\EnvParametersResource` class has been deprecated and will be removed in 4.0.
 
 Process
 -------

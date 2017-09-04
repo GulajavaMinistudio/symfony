@@ -19,15 +19,15 @@ namespace Symfony\Component\Lock;
 final class Key
 {
     private $resource;
-    private $expiringDate;
+    private $expiringTime;
     private $state = array();
 
     /**
      * @param string $resource
      */
-    public function __construct($resource)
+    public function __construct(string $resource)
     {
-        $this->resource = (string) $resource;
+        $this->resource = $resource;
     }
 
     public function __toString()
@@ -35,41 +35,29 @@ final class Key
         return $this->resource;
     }
 
-    /**
-     * @param string $stateKey
-     *
-     * @return bool
-     */
-    public function hasState($stateKey)
+    public function hasState(string $stateKey): bool
     {
         return isset($this->state[$stateKey]);
     }
 
-    /**
-     * @param string $stateKey
-     * @param mixed  $state
-     */
-    public function setState($stateKey, $state)
+    public function setState(string $stateKey, $state): void
     {
         $this->state[$stateKey] = $state;
     }
 
-    /**
-     * @param string $stateKey
-     */
-    public function removeState($stateKey)
+    public function removeState(string $stateKey): void
     {
         unset($this->state[$stateKey]);
     }
 
-    /**
-     * @param $stateKey
-     *
-     * @return mixed
-     */
-    public function getState($stateKey)
+    public function getState(string $stateKey)
     {
         return $this->state[$stateKey];
+    }
+
+    public function resetLifetime()
+    {
+        $this->expiringTime = null;
     }
 
     /**
@@ -77,23 +65,28 @@ final class Key
      */
     public function reduceLifetime($ttl)
     {
-        $newExpiringDate = \DateTimeImmutable::createFromFormat('U.u', (string) (microtime(true) + $ttl));
+        $newTime = microtime(true) + $ttl;
 
-        if (null === $this->expiringDate || $newExpiringDate < $this->expiringDate) {
-            $this->expiringDate = $newExpiringDate;
+        if (null === $this->expiringTime || $this->expiringTime > $newTime) {
+            $this->expiringTime = $newTime;
         }
     }
 
-    public function resetExpiringDate()
+    /**
+     * Returns the remaining lifetime.
+     *
+     * @return float|null Remaining lifetime in seconds. Null when the key won't expire.
+     */
+    public function getRemainingLifetime()
     {
-        $this->expiringDate = null;
+        return null === $this->expiringTime ? null : $this->expiringTime - microtime(true);
     }
 
     /**
-     * @return \DateTimeImmutable
+     * @return bool
      */
-    public function getExpiringDate()
+    public function isExpired()
     {
-        return $this->expiringDate;
+        return null !== $this->expiringTime && $this->expiringTime <= microtime(true);
     }
 }
