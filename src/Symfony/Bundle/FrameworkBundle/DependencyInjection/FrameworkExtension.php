@@ -65,6 +65,7 @@ use Symfony\Component\Serializer\Encoder\EncoderInterface;
 use Symfony\Component\Serializer\Encoder\YamlEncoder;
 use Symfony\Component\Serializer\Mapping\Factory\CacheClassMetadataFactory;
 use Symfony\Component\Serializer\Normalizer\DataUriNormalizer;
+use Symfony\Component\Serializer\Normalizer\DateIntervalNormalizer;
 use Symfony\Component\Serializer\Normalizer\DateTimeNormalizer;
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 use Symfony\Component\Serializer\Normalizer\JsonSerializableNormalizer;
@@ -445,27 +446,6 @@ class FrameworkExtension extends Extension
 
         $container->setParameter('profiler.storage.dsn', $config['dsn']);
 
-        if ($this->isConfigEnabled($container, $config['matcher'])) {
-            if (isset($config['matcher']['service'])) {
-                $container->setAlias('profiler.request_matcher', $config['matcher']['service'])->setPrivate(true);
-            } elseif (isset($config['matcher']['ip']) || isset($config['matcher']['path']) || isset($config['matcher']['ips'])) {
-                $definition = $container->register('profiler.request_matcher', 'Symfony\\Component\\HttpFoundation\\RequestMatcher');
-                $definition->setPublic(false);
-
-                if (isset($config['matcher']['ip'])) {
-                    $definition->addMethodCall('matchIp', array($config['matcher']['ip']));
-                }
-
-                if (isset($config['matcher']['ips'])) {
-                    $definition->addMethodCall('matchIps', array($config['matcher']['ips']));
-                }
-
-                if (isset($config['matcher']['path'])) {
-                    $definition->addMethodCall('matchPath', array($config['matcher']['path']));
-                }
-            }
-        }
-
         if (!$config['collect']) {
             $container->getDefinition('profiler')->addMethodCall('disable', array());
         }
@@ -501,9 +481,9 @@ class FrameworkExtension extends Extension
 
             $transitions = array();
             foreach ($workflow['transitions'] as $transition) {
-                if ($type === 'workflow') {
+                if ('workflow' === $type) {
                     $transitions[] = new Definition(Workflow\Transition::class, array($transition['name'], $transition['from'], $transition['to']));
-                } elseif ($type === 'state_machine') {
+                } elseif ('state_machine' === $type) {
                     foreach ($transition['from'] as $from) {
                         foreach ($transition['to'] as $to) {
                             $transitions[] = new Definition(Workflow\Transition::class, array($transition['name'], $from, $to));
@@ -621,7 +601,10 @@ class FrameworkExtension extends Extension
         $loader->load('debug_prod.xml');
 
         if (class_exists(Stopwatch::class)) {
-            $container->register('debug.stopwatch', Stopwatch::class)->addArgument(true)->setPrivate(true);
+            $container->register('debug.stopwatch', Stopwatch::class)
+                ->addArgument(true)
+                ->setPrivate(true)
+                ->addTag('kernel.reset', array('method' => 'reset'));
             $container->setAlias(Stopwatch::class, new Alias('debug.stopwatch', false));
         }
 
@@ -1260,6 +1243,13 @@ class FrameworkExtension extends Extension
             $definition = $container->register('serializer.normalizer.data_uri', DataUriNormalizer::class);
             $definition->setPublic(false);
             $definition->addTag('serializer.normalizer', array('priority' => -920));
+        }
+
+        if (class_exists(DateIntervalNormalizer::class)) {
+            // Run before serializer.normalizer.object
+            $definition = $container->register('serializer.normalizer.dateinterval', DateIntervalNormalizer::class);
+            $definition->setPublic(false);
+            $definition->addTag('serializer.normalizer', array('priority' => -915));
         }
 
         if (class_exists('Symfony\Component\Serializer\Normalizer\DateTimeNormalizer')) {
