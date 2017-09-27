@@ -12,9 +12,9 @@ $container->loadFromExtension('security', array(
     ),
     'firewalls' => array(
         'simple' => array('pattern' => '/login', 'security' => false),
-        'secure' => array('stateless' => true,
+        'secure' => array(
+            'stateless' => true,
             'http_basic' => true,
-            'http_digest' => array('secret' => 'TheSecret'),
             'form_login' => true,
             'anonymous' => true,
             'switch_user' => true,

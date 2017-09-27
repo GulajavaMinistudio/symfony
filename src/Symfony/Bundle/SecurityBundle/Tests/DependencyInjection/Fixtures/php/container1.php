@@ -1,7 +1,6 @@
 <?php
 
 $container->loadFromExtension('security', array(
-    'acl' => array(),
     'encoders' => array(
         'JMS\FooBundle\Entity\User1' => 'plaintext',
         'JMS\FooBundle\Entity\User2' => array(
@@ -64,7 +63,6 @@ $container->loadFromExtension('security', array(
         'simple' => array('pattern' => '/login', 'security' => false),
         'secure' => array('stateless' => true,
             'http_basic' => true,
-            'http_digest' => array('secret' => 'TheSecret'),
             'form_login' => true,
             'anonymous' => true,
             'switch_user' => true,
@@ -73,6 +71,7 @@ $container->loadFromExtension('security', array(
             'logout' => true,
             'remember_me' => array('secret' => 'TheSecret'),
             'user_checker' => null,
+            'logout_on_user_change' => true,
         ),
         'host' => array(
             'pattern' => '/test',
@@ -80,11 +79,13 @@ $container->loadFromExtension('security', array(
             'methods' => array('GET', 'POST'),
             'anonymous' => true,
             'http_basic' => true,
+            'logout_on_user_change' => true,
         ),
         'with_user_checker' => array(
             'user_checker' => 'app.user_checker',
             'anonymous' => true,
             'http_basic' => true,
+            'logout_on_user_change' => true,
         ),
     ),
 

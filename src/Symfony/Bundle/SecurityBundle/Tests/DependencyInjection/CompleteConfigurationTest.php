@@ -22,8 +22,6 @@ use Symfony\Component\Security\Core\Authorization\AccessDecisionManager;
 
 abstract class CompleteConfigurationTest extends TestCase
 {
-    private static $containerCache = array();
-
     abstract protected function getLoader(ContainerBuilder $container);
 
     abstract protected function getFileExtension();
@@ -31,6 +29,20 @@ abstract class CompleteConfigurationTest extends TestCase
     public function testRolesHierarchy()
     {
         $container = $this->getContainer('container1');
+        $this->assertEquals(array(
+            'ROLE_ADMIN' => array('ROLE_USER'),
+            'ROLE_SUPER_ADMIN' => array('ROLE_USER', 'ROLE_ADMIN', 'ROLE_ALLOWED_TO_SWITCH'),
+            'ROLE_REMOTE' => array('ROLE_USER', 'ROLE_ADMIN'),
+        ), $container->getParameter('security.role_hierarchy.roles'));
+    }
+
+    /**
+     * @group legacy
+     * @expectedDeprecation The "security.acl" configuration key is deprecated since version 3.4 and will be removed in 4.0. Install symfony/acl-bundle and use the "acl" key instead.
+     */
+    public function testRolesHierarchyWithAcl()
+    {
+        $container = $this->getContainer('container1_with_acl');
         $this->assertEquals(array(
             'ROLE_ADMIN' => array('ROLE_USER'),
             'ROLE_SUPER_ADMIN' => array('ROLE_USER', 'ROLE_ADMIN', 'ROLE_ALLOWED_TO_SWITCH'),
@@ -111,7 +123,6 @@ abstract class CompleteConfigurationTest extends TestCase
                     'remote_user',
                     'form_login',
                     'http_basic',
-                    'http_digest',
                     'remember_me',
                     'anonymous',
                 ),
@@ -165,7 +176,6 @@ abstract class CompleteConfigurationTest extends TestCase
                 'security.authentication.listener.remote_user.secure',
                 'security.authentication.listener.form.secure',
                 'security.authentication.listener.basic.secure',
-                'security.authentication.listener.digest.secure',
                 'security.authentication.listener.rememberme.secure',
                 'security.authentication.listener.anonymous.secure',
                 'security.authentication.switchuser_listener.secure',
@@ -314,14 +324,22 @@ abstract class CompleteConfigurationTest extends TestCase
         )), $container->getDefinition('security.encoder_factory.generic')->getArguments());
     }
 
+    /**
+     * @group legacy
+     * @expectedDeprecation The "security.acl" configuration key is deprecated since version 3.4 and will be removed in 4.0. Install symfony/acl-bundle and use the "acl" key instead.
+     */
     public function testAcl()
     {
-        $container = $this->getContainer('container1');
+        $container = $this->getContainer('container1_with_acl');
 
         $this->assertTrue($container->hasDefinition('security.acl.dbal.provider'));
         $this->assertEquals('security.acl.dbal.provider', (string) $container->getAlias('security.acl.provider'));
     }
 
+    /**
+     * @group legacy
+     * @expectedDeprecation The "security.acl" configuration key is deprecated since version 3.4 and will be removed in 4.0. Install symfony/acl-bundle and use the "acl" key instead.
+     */
     public function testCustomAclProvider()
     {
         $container = $this->getContainer('custom_acl_provider');
@@ -421,9 +439,6 @@ abstract class CompleteConfigurationTest extends TestCase
     {
         $file = $file.'.'.$this->getFileExtension();
 
-        if (isset(self::$containerCache[$file])) {
-            return self::$containerCache[$file];
-        }
         $container = new ContainerBuilder();
         $security = new SecurityExtension();
         $container->registerExtension($security);
@@ -436,6 +451,6 @@ abstract class CompleteConfigurationTest extends TestCase
         $container->getCompilerPassConfig()->setRemovingPasses(array());
         $container->compile();
 
-        return self::$containerCache[$file] = $container;
+        return $container;
     }
 }

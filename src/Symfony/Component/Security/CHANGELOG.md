@@ -10,12 +10,20 @@ CHANGELOG
  * removed the `RoleInterface`
  * removed support for voters that don't implement the `VoterInterface`
  * added a sixth `string $context` argument to `LogoutUrlGenerator::registerListener()`
+ * removed HTTP digest authentication
 
 3.4.0
 -----
 
+ * added a `setToken()` method to the `SwitchUserEvent` class to allow to replace the created token while switching users
+   when custom token generation is required by application. 
  * Using voters that do not implement the `VoterInterface`is now deprecated in
    the `AccessDecisionManager` and this functionality will be removed in 4.0.
+ * Using the `ContextListener` without setting the `logoutOnUserChange`
+   property will trigger a deprecation when the user has changed. As of 4.0
+   the user will always be logged out when the user has changed between
+   requests.
+ * deprecated HTTP digest authentication
 
 3.3.0
 -----
