@@ -9,13 +9,14 @@
  * file that was distributed with this source code.
  */
 
-namespace Symfony\Bundle\SecurityBundle\Tests\Functional\Bundle\AclBundle;
-
-use Symfony\Component\HttpKernel\Bundle\Bundle;
+namespace Symfony\Component\Security\Core\Encoder;
 
 /**
- * @author Kévin Dunglas <kevin@les-tilleuls.coop>
+ * SelfSaltingEncoderInterface is a marker interface for encoders that do not
+ * require a user-generated salt.
+ *
+ * @author Zan Baldwin <hello@zanbaldwin.com>
  */
-class AclBundle extends Bundle
+interface SelfSaltingEncoderInterface
 {
 }

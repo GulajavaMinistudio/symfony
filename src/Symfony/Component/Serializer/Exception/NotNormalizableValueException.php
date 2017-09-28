@@ -9,14 +9,11 @@
  * file that was distributed with this source code.
  */
 
-namespace Symfony\Bundle\SecurityBundle\Tests\Functional\Bundle\AclBundle\Entity;
+namespace Symfony\Component\Serializer\Exception;
 
 /**
- * Car.
- *
- * @author Kévin Dunglas <kevin@les-tilleuls.coop>
+ * @author Christian Flothmann <christian.flothmann@sensiolabs.de>
  */
-class Car
+class NotNormalizableValueException extends UnexpectedValueException
 {
-    public $id;
 }
