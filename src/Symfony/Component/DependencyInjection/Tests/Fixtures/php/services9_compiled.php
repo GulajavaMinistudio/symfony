@@ -52,6 +52,7 @@ class ProjectServiceContainer extends Container
             'method_call1' => 'getMethodCall1Service',
             'new_factory_service' => 'getNewFactoryServiceService',
             'service_from_static_method' => 'getServiceFromStaticMethodService',
+            'tagged_iterator' => 'getTaggedIteratorService',
         );
         $this->aliases = array(
             'alias_for_alias' => 'foo',
@@ -370,6 +371,19 @@ class ProjectServiceContainer extends Container
     protected function getServiceFromStaticMethodService()
     {
         return $this->services['service_from_static_method'] = \Bar\FooClass::getInstance();
+    }
+
+    /**
+     * Gets the public 'tagged_iterator' shared service.
+     *
+     * @return \Bar
+     */
+    protected function getTaggedIteratorService()
+    {
+        return $this->services['tagged_iterator'] = new \Bar(new RewindableGenerator(function () {
+            yield 0 => ($this->services['foo'] ?? $this->getFooService());
+            yield 1 => ($this->privates['tagged_iterator_foo'] ?? $this->privates['tagged_iterator_foo'] = new \Bar());
+        }, 2));
     }
 
     /**
