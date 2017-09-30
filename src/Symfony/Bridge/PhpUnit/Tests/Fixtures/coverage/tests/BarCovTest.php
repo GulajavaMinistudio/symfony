@@ -13,16 +13,16 @@ namespace PhpUnitCoverageTest\Tests;
 
 use PHPUnit\Framework\TestCase;
 
-class BarTest extends TestCase
+class BarCovTest extends TestCase
 {
-    public function testBar()
+    public function testBarCov()
     {
-        if (!class_exists('PhpUnitCoverageTest\Foo')) {
+        if (!class_exists('PhpUnitCoverageTest\FooCov')) {
             $this->markTestSkipped('This test is not part of the main Symfony test suite. It\'s here to test the CoverageListener.');
         }
 
-        $foo = new \PhpUnitCoverageTest\Foo();
-        $bar = new \PhpUnitCoverageTest\Bar($foo);
+        $foo = new \PhpUnitCoverageTest\FooCov();
+        $bar = new \PhpUnitCoverageTest\BarCov($foo);
 
         $this->assertSame('bar', $bar->barZ());
     }
