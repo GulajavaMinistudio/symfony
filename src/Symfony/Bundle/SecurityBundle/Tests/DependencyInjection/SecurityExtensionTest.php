@@ -148,6 +148,57 @@ class SecurityExtensionTest extends TestCase
         $container->compile();
     }
 
+    /**
+     * @group legacy
+     * @expectedDeprecation Firewall "some_firewall" is configured as "stateless" but the "switch_user.stateless" key is set to false. Both should have the same value, the firewall's "stateless" value will be used as default value for the "switch_user.stateless" key in 4.0.
+     */
+    public function testSwitchUserNotStatelessOnStatelessFirewall()
+    {
+        $container = $this->getRawContainer();
+
+        $container->loadFromExtension('security', array(
+            'providers' => array(
+                'default' => array('id' => 'foo'),
+            ),
+
+            'firewalls' => array(
+                'some_firewall' => array(
+                    'stateless' => true,
+                    'http_basic' => null,
+                    'switch_user' => array('stateless' => false),
+                    'logout_on_user_change' => true,
+                ),
+            ),
+        ));
+
+        $container->compile();
+    }
+
+    /**
+     * @expectedException \Symfony\Component\Config\Definition\Exception\InvalidConfigurationException
+     * @expectedExceptionMessage Not configuring explicitly the provider on "default" firewall is ambiguous as there is more than one registered provider.
+     */
+    public function testDeprecationForAmbiguousProvider()
+    {
+        $container = $this->getRawContainer();
+
+        $container->loadFromExtension('security', array(
+            'providers' => array(
+                'first' => array('id' => 'foo'),
+                'second' => array('id' => 'bar'),
+            ),
+
+            'firewalls' => array(
+                'default' => array(
+                    'http_basic' => null,
+                    'logout_on_user_change' => true,
+                ),
+            ),
+        ));
+
+        $container->compile();
+    }
+
     protected function getRawContainer()
     {
         $container = new ContainerBuilder();

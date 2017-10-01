@@ -13,6 +13,7 @@ CHANGELOG
  * removed command `acl:set` along with `SetAclCommand` class
  * removed command `init:acl` along with `InitAclCommand` class
  * removed `acl` configuration key and related services, use symfony/acl-bundle instead
+ * removed auto picking the first registered provider when no configured provider on a firewall and ambiguous
 
 3.4.0
 -----
@@ -30,6 +31,8 @@ CHANGELOG
  * deprecated command `acl:set` along with `SetAclCommand` class
  * deprecated command `init:acl` along with `InitAclCommand` class
  * Added support for the new Argon2i password encoder
+ * added `stateless` option to the `switch_user` listener
+ * deprecated auto picking the first registered provider when no configured provider on a firewall and ambiguous
 
 3.3.0
 -----
