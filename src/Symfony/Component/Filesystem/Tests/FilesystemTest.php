@@ -374,16 +374,13 @@ class FilesystemTest extends FilesystemTestCase
      */
     public function testFilesExistsFails()
     {
-        if ('\\' !== DIRECTORY_SEPARATOR) {
-            $this->markTestSkipped('Test covers edge case on Windows only.');
-        }
-
         $basePath = $this->workspace.'\\directory\\';
+        $maxPathLength = PHP_MAXPATHLEN - 2;
 
         $oldPath = getcwd();
         mkdir($basePath);
         chdir($basePath);
-        $file = str_repeat('T', 259 - strlen($basePath));
+        $file = str_repeat('T', $maxPathLength - strlen($basePath) + 1);
         $path = $basePath.$file;
         exec('TYPE NUL >>'.$file); // equivalent of touch, we can not use the php touch() here because it suffers from the same limitation
         $this->longPathNamesWindows[] = $path; // save this so we can clean up later
@@ -1142,11 +1139,32 @@ class FilesystemTest extends FilesystemTestCase
 
     /**
      * @group legacy
+     * @dataProvider provideLegacyPathsForMakePathRelativeWithRelativePaths
      * @expectedDeprecation Support for passing relative paths to Symfony\Component\Filesystem\Filesystem::makePathRelative() is deprecated since version 3.4 and will be removed in 4.0.
      */
-    public function testMakePathRelativeWithRelativePaths()
+    public function testMakePathRelativeWithRelativePaths($endPath, $startPath, $expectedPath)
     {
-        $this->assertSame('../../../', $this->filesystem->makePathRelative('var/lib/symfony/', 'var/lib/symfony/src/Symfony/Component'));
+        $path = $this->filesystem->makePathRelative($endPath, $startPath);
+
+        $this->assertEquals($expectedPath, $path);
+    }
+
+    public function provideLegacyPathsForMakePathRelativeWithRelativePaths()
+    {
+        return array(
+            array('usr/lib/symfony/', 'var/lib/symfony/src/Symfony/Component', '../../../../../../usr/lib/symfony/'),
+            array('aa/bb', 'aa/cc', '../bb/'),
+            array('aa/cc', 'bb/cc', '../../aa/cc/'),
+            array('aa/bb', 'aa/./cc', '../bb/'),
+            array('aa/./bb', 'aa/cc', '../bb/'),
+            array('aa/./bb', 'aa/./cc', '../bb/'),
+            array('../../', '../../', './'),
+            array('../aa/bb/', 'aa/bb/', '../../../aa/bb/'),
+            array('../../../', '../../', '../'),
+            array('', '', './'),
+            array('', 'aa/', '../'),
+            array('aa/', '', 'aa/'),
+        );
     }
 
     public function testMirrorCopiesFilesAndDirectoriesRecursively()
