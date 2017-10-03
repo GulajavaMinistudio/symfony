@@ -22,6 +22,7 @@ CHANGELOG
  * removed support for setting and accessing private services in `Container`
  * removed support for setting pre-defined services in `Container`
  * removed support for case insensitivity of parameter names
+ * removed `AutowireExceptionPass` and `AutowirePass::getAutowiringExceptions()`, use `Definition::addError()` and the `DefinitionErrorExceptionPass` instead
 
 3.4.0
 -----
@@ -36,6 +37,8 @@ CHANGELOG
  * deprecated case insensitivity of parameter names
  * deprecated the `ResolveDefinitionTemplatesPass` class in favor of `ResolveChildDefinitionsPass`
  * added `TaggedIteratorArgument` with YAML (`!tagged foo`) and XML (`<service type="tagged"/>`) support
+ * deprecated `AutowireExceptionPass` and `AutowirePass::getAutowiringExceptions()`, use `Definition::addError()` and the `DefinitionErrorExceptionPass` instead
+
 
 3.3.0
 -----
