@@ -63,6 +63,19 @@ Debug
 
  * Support for stacked errors in the `ErrorHandler` is deprecated and will be removed in Symfony 4.0.
 
+DoctrineBridge
+--------------
+
+* Deprecated `Symfony\Bridge\Doctrine\HttpFoundation\DbalSessionHandler` and
+  `Symfony\Bridge\Doctrine\HttpFoundation\DbalSessionHandlerSchema`. Use
+  `Symfony\Component\HttpFoundation\Session\Storage\Handler\PdoSessionHandler` instead.
+
+EventDispatcher
+---------------
+
+ * Implementing `TraceableEventDispatcherInterface` without the `reset()` method
+   is deprecated and will be unsupported in 4.0.
+
 Filesystem
 ----------
 
@@ -234,6 +247,12 @@ HttpFoundation
  * `NativeSessionStorage::setSaveHandler()` now takes an instance of `\SessionHandlerInterface` as argument.
    Not passing it is deprecated and will throw a `TypeError` in 4.0.
 
+ * Using `Symfony\Component\HttpFoundation\Session\Storage\Handler\MongoDbSessionHandler` with the legacy mongo extension
+   has been deprecated and will be removed in 4.0. Use it with the mongodb/mongodb package and ext-mongodb instead.
+
+ * The `Symfony\Component\HttpFoundation\Session\Storage\Handler\MemcacheSessionHandler` class has been deprecated and
+   will be removed in 4.0. Use `Symfony\Component\HttpFoundation\Session\Storage\Handler\MemcachedSessionHandler` instead.
+
 HttpKernel
 ----------
 
@@ -270,6 +289,10 @@ HttpKernel
 
  * The `Symfony\Component\HttpKernel\Config\EnvParametersResource` class has been deprecated and will be removed in 4.0.
 
+ * Implementing `DataCollectorInterface` without a `reset()` method has been deprecated and will be unsupported in 4.0.
+
+ * Implementing `DebugLoggerInterface` without a `clear()` method has been deprecated and will be unsupported in 4.0.
+
  * The `ChainCacheClearer::add()` method has been deprecated and will be removed in 4.0,
    inject the list of clearers as a constructor argument instead.
 
@@ -284,6 +307,8 @@ Process
  * The `Symfony\Component\Process\ProcessBuilder` class has been deprecated,
    use the `Symfony\Component\Process\Process` class directly instead.
 
+ * Calling `Process::start()` without setting a valid working directory (via `setWorkingDirectory()` or constructor) beforehand is deprecated and will throw an exception in 4.0.
+
 Profiler
 --------
 
@@ -295,6 +320,9 @@ Security
  * Deprecated the HTTP digest authentication: `NonceExpiredException`,
    `DigestAuthenticationListener` and `DigestAuthenticationEntryPoint` will be
    removed in 4.0. Use another authentication system like `http_basic` instead.
+   
+ * The `GuardAuthenticatorInterface` has been deprecated and will be removed in 4.0.
+   Use `AuthenticatorInterface` instead.
 
 SecurityBundle
 --------------
@@ -320,11 +348,11 @@ SecurityBundle
 
  * Deprecated the HTTP digest authentication: `HttpDigestFactory` will be removed in 4.0.
    Use another authentication system like `http_basic` instead.
-   
+
  * Deprecated setting the `switch_user.stateless` option to false when the firewall is `stateless`.
    Setting it to false will have no effect in 4.0.
 
- * Not configuring explicitly the provider on a firewall is ambiguous when there is more than one registered provider. 
+ * Not configuring explicitly the provider on a firewall is ambiguous when there is more than one registered provider.
    Using the first configured provider is deprecated since 3.4 and will throw an exception on 4.0.
    Explicitly configure the provider to use on your firewalls.
 

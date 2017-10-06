@@ -268,26 +268,21 @@ class Process implements \IteratorAggregate
             }
         }
 
-        if (null === $env) {
-            $env = $this->env;
-        } elseif ($this->env) {
+        if ($this->env) {
             $env += $this->env;
         }
 
         $envBackup = array();
-        if (null !== $env) {
-            foreach ($env as $k => $v) {
-                $envBackup[$k] = getenv($k);
-                putenv(false === $v || null === $v ? $k : "$k=$v");
-            }
-            $env = null;
+        foreach ($env as $k => $v) {
+            $envBackup[$k] = getenv($k);
+            putenv(false === $v || null === $v ? $k : "$k=$v");
         }
 
         $options = array('suppress_errors' => true);
 
         if ('\\' === DIRECTORY_SEPARATOR) {
             $options['bypass_shell'] = true;
-            $commandline = $this->prepareWindowsCommandLine($commandline, $envBackup, $env);
+            $commandline = $this->prepareWindowsCommandLine($commandline, $envBackup);
         } elseif (!$this->useFileHandles && $this->isSigchildEnabled()) {
             // last exit code is output on the fourth pipe and caught to work around --enable-sigchild
             $descriptors[3] = array('pipe', 'w');
@@ -301,7 +296,15 @@ class Process implements \IteratorAggregate
             $ptsWorkaround = fopen(__FILE__, 'r');
         }
 
-        $this->process = proc_open($commandline, $descriptors, $this->processPipes->pipes, $this->cwd, $env, $options);
+        if (!is_dir($this->cwd)) {
+            if ('\\' === DIRECTORY_SEPARATOR) {
+                throw new RuntimeException('The provided cwd does not exist.');
+            }
+
+            @trigger_error('The provided cwd does not exist. Command is currently ran against getcwd(). This behavior is deprecated since version 3.4 and will be removed in 4.0.', E_USER_DEPRECATED);
+        }
+
+        $this->process = proc_open($commandline, $descriptors, $this->processPipes->pipes, $this->cwd, null, $options);
 
         foreach ($envBackup as $k => $v) {
             putenv(false === $v ? $k : "$k=$v");
@@ -1464,7 +1467,7 @@ class Process implements \IteratorAggregate
         return true;
     }
 
-    private function prepareWindowsCommandLine($cmd, array &$envBackup, array &$env = null)
+    private function prepareWindowsCommandLine($cmd, array &$envBackup)
     {
         $uid = uniqid('', true);
         $varCount = 0;
@@ -1477,7 +1480,7 @@ class Process implements \IteratorAggregate
                     [^"%!^]*+
                 )++
             ) | [^"]*+ )"/x',
-            function ($m) use (&$envBackup, &$env, &$varCache, &$varCount, $uid) {
+            function ($m) use (&$envBackup, &$varCache, &$varCount, $uid) {
                 if (!isset($m[1])) {
                     return $m[0];
                 }
@@ -1495,11 +1498,7 @@ class Process implements \IteratorAggregate
                 $value = '"'.preg_replace('/(\\\\*)"/', '$1$1\\"', $value).'"';
                 $var = $uid.++$varCount;
 
-                if (null === $env) {
-                    putenv("$var=$value");
-                } else {
-                    $env[$var] = $value;
-                }
+                putenv("$var=$value");
 
                 $envBackup[$var] = false;
 

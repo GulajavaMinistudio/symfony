@@ -12,9 +12,8 @@
 namespace Symfony\Bridge\Doctrine;
 
 use ProxyManager\Proxy\LazyLoadingInterface;
+use Psr\Container\ContainerInterface;
 use Symfony\Component\DependencyInjection\Container;
-use Symfony\Component\DependencyInjection\ContainerAwareInterface;
-use Symfony\Component\DependencyInjection\ContainerAwareTrait;
 use Doctrine\Common\Persistence\AbstractManagerRegistry;
 
 /**
@@ -22,9 +21,12 @@ use Doctrine\Common\Persistence\AbstractManagerRegistry;
  *
  * @author  Lukas Kahwe Smith <smith@pooteeweet.org>
  */
-abstract class ManagerRegistry extends AbstractManagerRegistry implements ContainerAwareInterface
+abstract class ManagerRegistry extends AbstractManagerRegistry
 {
-    use ContainerAwareTrait;
+    /**
+     * @var ContainerInterface
+     */
+    protected $container;
 
     /**
      * {@inheritdoc}

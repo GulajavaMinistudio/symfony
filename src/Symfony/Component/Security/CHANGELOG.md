@@ -11,6 +11,8 @@ CHANGELOG
  * removed support for voters that don't implement the `VoterInterface`
  * added a sixth `string $context` argument to `LogoutUrlGenerator::registerListener()`
  * removed HTTP digest authentication
+ * removed `GuardAuthenticatorInterface` in favor of `AuthenticatorInterface`
+ * removed `AbstractGuardAuthenticator::supports()`
 
 3.4.0
 -----
@@ -26,6 +28,7 @@ CHANGELOG
    requests.
  * deprecated HTTP digest authentication
  * Added a new password encoder for the Argon2i hashing algorithm
+ * deprecated `GuardAuthenticatorInterface` in favor of `AuthenticatorInterface`
 
 3.3.0
 -----

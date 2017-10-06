@@ -48,13 +48,7 @@ class ControllerResolver extends ContainerControllerResolver
         $resolvedController = parent::createController($controller);
 
         if (1 === substr_count($controller, ':') && is_array($resolvedController)) {
-            if ($resolvedController[0] instanceof ContainerAwareInterface) {
-                $resolvedController[0]->setContainer($this->container);
-            }
-
-            if ($resolvedController[0] instanceof AbstractController && null !== $previousContainer = $resolvedController[0]->setContainer($this->container)) {
-                $resolvedController[0]->setContainer($previousContainer);
-            }
+            $resolvedController[0] = $this->configureController($resolvedController[0]);
         }
 
         return $resolvedController;
@@ -65,8 +59,11 @@ class ControllerResolver extends ContainerControllerResolver
      */
     protected function instantiateController($class)
     {
-        $controller = parent::instantiateController($class);
+        return $this->configureController(parent::instantiateController($class));
+    }
 
+    private function configureController($controller)
+    {
         if ($controller instanceof ContainerAwareInterface) {
             $controller->setContainer($this->container);
         }
