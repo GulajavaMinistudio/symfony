@@ -26,29 +26,23 @@ class Table
 {
     /**
      * Table headers.
-     *
-     * @var array
      */
     private $headers = array();
 
     /**
      * Table rows.
-     *
-     * @var array
      */
     private $rows = array();
 
     /**
      * Column widths cache.
-     *
-     * @var array
      */
     private $effectiveColumnWidths = array();
 
     /**
      * Number of columns cache.
      *
-     * @var array
+     * @var int
      */
     private $numberOfColumns;
 
@@ -459,7 +453,7 @@ class Table
      *
      * @return array
      */
-    private function fillNextRows($rows, $line)
+    private function fillNextRows(array $rows, $line)
     {
         $unmergedRows = array();
         foreach ($rows[$line] as $column => $cell) {
@@ -510,7 +504,7 @@ class Table
     /**
      * fill cells for a row that contains colspan > 1.
      *
-     * @param array $row
+     * @param array|\Traversable $row
      *
      * @return array
      */
@@ -536,7 +530,7 @@ class Table
      *
      * @return array
      */
-    private function copyRow($rows, $line)
+    private function copyRow(array $rows, $line)
     {
         $row = $rows[$line];
         foreach ($row as $cellKey => $cellValue) {
@@ -551,8 +545,6 @@ class Table
 
     /**
      * Gets number of columns by row.
-     *
-     * @param array $row
      *
      * @return int
      */
@@ -569,11 +561,9 @@ class Table
     /**
      * Gets list of columns for the given row.
      *
-     * @param array $row
-     *
      * @return array
      */
-    private function getRowColumns($row)
+    private function getRowColumns(array $row)
     {
         $columns = range(0, $this->numberOfColumns - 1);
         foreach ($row as $cellKey => $cell) {

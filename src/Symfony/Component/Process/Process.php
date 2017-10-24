@@ -83,8 +83,6 @@ class Process implements \IteratorAggregate
      * Exit codes translation table.
      *
      * User-defined errors must use exit codes in the 64-113 range.
-     *
-     * @var array
      */
     public static $exitCodes = array(
         0 => 'OK',
@@ -196,7 +194,7 @@ class Process implements \IteratorAggregate
      *
      * @final since version 3.3
      */
-    public function run($callback = null, array $env = array())
+    public function run(callable $callback = null, array $env = array())
     {
         $this->start($callback, $env);
 

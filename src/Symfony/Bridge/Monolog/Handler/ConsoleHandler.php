@@ -11,6 +11,7 @@
 
 namespace Symfony\Bridge\Monolog\Handler;
 
+use Monolog\Formatter\LineFormatter;
 use Monolog\Handler\AbstractProcessingHandler;
 use Monolog\Logger;
 use Symfony\Bridge\Monolog\Formatter\ConsoleFormatter;
@@ -20,6 +21,7 @@ use Symfony\Component\Console\Event\ConsoleTerminateEvent;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use Symfony\Component\VarDumper\Dumper\CliDumper;
 
 /**
  * Writes logs to the console output depending on its verbosity setting.
@@ -40,14 +42,7 @@ use Symfony\Component\EventDispatcher\EventSubscriberInterface;
  */
 class ConsoleHandler extends AbstractProcessingHandler implements EventSubscriberInterface
 {
-    /**
-     * @var OutputInterface|null
-     */
     private $output;
-
-    /**
-     * @var array
-     */
     private $verbosityLevelMap = array(
         OutputInterface::VERBOSITY_QUIET => Logger::ERROR,
         OutputInterface::VERBOSITY_NORMAL => Logger::WARNING,
@@ -93,8 +88,6 @@ class ConsoleHandler extends AbstractProcessingHandler implements EventSubscribe
 
     /**
      * Sets the console output to use for printing logs.
-     *
-     * @param OutputInterface $output The console output to use
      */
     public function setOutput(OutputInterface $output)
     {
@@ -114,8 +107,6 @@ class ConsoleHandler extends AbstractProcessingHandler implements EventSubscribe
     /**
      * Before a command is executed, the handler gets activated and the console output
      * is set in order to know where to write the logs.
-     *
-     * @param ConsoleCommandEvent $event
      */
     public function onCommand(ConsoleCommandEvent $event)
     {
@@ -129,8 +120,6 @@ class ConsoleHandler extends AbstractProcessingHandler implements EventSubscribe
 
     /**
      * After a command has been executed, it disables the output.
-     *
-     * @param ConsoleTerminateEvent $event
      */
     public function onTerminate(ConsoleTerminateEvent $event)
     {
@@ -162,6 +151,9 @@ class ConsoleHandler extends AbstractProcessingHandler implements EventSubscribe
      */
     protected function getDefaultFormatter()
     {
+        if (!class_exists(CliDumper::class)) {
+            return new LineFormatter();
+        }
         if (!$this->output) {
             return new ConsoleFormatter();
         }

@@ -162,19 +162,12 @@ class ContainerBuilder extends Container implements TaggedContainerInterface
 
     /**
      * Sets the instantiator to be used when fetching proxies.
-     *
-     * @param InstantiatorInterface $proxyInstantiator
      */
     public function setProxyInstantiator(InstantiatorInterface $proxyInstantiator)
     {
         $this->proxyInstantiator = $proxyInstantiator;
     }
 
-    /**
-     * Registers an extension.
-     *
-     * @param ExtensionInterface $extension An extension instance
-     */
     public function registerExtension(ExtensionInterface $extension)
     {
         $this->extensions[$extension->getAlias()] = $extension;
@@ -239,10 +232,6 @@ class ContainerBuilder extends Container implements TaggedContainerInterface
     }
 
     /**
-     * Adds a resource for this configuration.
-     *
-     * @param ResourceInterface $resource A resource instance
-     *
      * @return $this
      */
     public function addResource(ResourceInterface $resource)
@@ -322,19 +311,14 @@ class ContainerBuilder extends Container implements TaggedContainerInterface
     /**
      * Retrieves the requested reflection class and registers it for resource tracking.
      *
-     * @param string $class
-     * @param bool   $throw
-     *
-     * @return \ReflectionClass|null
-     *
      * @throws \ReflectionException when a parent class/interface/trait is not found and $throw is true
      *
      * @final
      */
-    public function getReflectionClass($class, $throw = true)
+    public function getReflectionClass(?string $class, bool $throw = true): ?\ReflectionClass
     {
         if (!$class = $this->getParameterBag()->resolveValue($class)) {
-            return;
+            return null;
         }
         $resource = null;
 
@@ -379,7 +363,7 @@ class ContainerBuilder extends Container implements TaggedContainerInterface
      *
      * @final
      */
-    public function fileExists($path, $trackContents = true)
+    public function fileExists(string $path, $trackContents = true): bool
     {
         $exists = file_exists($path);
 
@@ -584,8 +568,6 @@ class ContainerBuilder extends Container implements TaggedContainerInterface
      * parameter, the value will still be 'bar' as defined in the ContainerBuilder
      * constructor.
      *
-     * @param ContainerBuilder $container The ContainerBuilder instance to merge
-     *
      * @throws BadMethodCallException When this ContainerBuilder is compiled
      */
     public function merge(ContainerBuilder $container)
@@ -747,8 +729,6 @@ class ContainerBuilder extends Container implements TaggedContainerInterface
 
     /**
      * Adds the service aliases.
-     *
-     * @param array $aliases An array of aliases
      */
     public function addAliases(array $aliases)
     {
@@ -759,8 +739,6 @@ class ContainerBuilder extends Container implements TaggedContainerInterface
 
     /**
      * Sets the service aliases.
-     *
-     * @param array $aliases An array of aliases
      */
     public function setAliases(array $aliases)
     {
@@ -1343,7 +1321,7 @@ class ContainerBuilder extends Container implements TaggedContainerInterface
     /**
      * @final
      */
-    public function log(CompilerPassInterface $pass, $message)
+    public function log(CompilerPassInterface $pass, string $message)
     {
         $this->getCompiler()->log($pass, $message);
     }
