@@ -251,10 +251,17 @@ class DeprecationErrorHandler
         $deprecations = array();
         $previousErrorHandler = set_error_handler(function ($type, $msg, $file, $line, $context = array()) use (&$deprecations, &$previousErrorHandler) {
             if (E_USER_DEPRECATED !== $type && E_DEPRECATED !== $type) {
-                return $previousErrorHandler ? $previousErrorHandler($type, $msg, $file, $line, $context) : false;
+                if ($previousErrorHandler) {
+                    return $previousErrorHandler($type, $msg, $file, $line, $context);
+                }
+
+                $ErrorHandler = class_exists('PHPUnit_Util_ErrorHandler', false) ? 'PHPUnit_Util_ErrorHandler' : 'PHPUnit\Util\ErrorHandler';
+
+                return $ErrorHandler::handleError($type, $msg, $file, $line, $context);
             }
             $deprecations[] = array(error_reporting(), $msg);
         });
+
         register_shutdown_function(function () use ($outputFile, &$deprecations) {
             file_put_contents($outputFile, serialize($deprecations));
         });
