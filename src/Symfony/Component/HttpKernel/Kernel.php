@@ -73,14 +73,10 @@ abstract class Kernel implements KernelInterface, RebootableInterface, Terminabl
     const END_OF_MAINTENANCE = '07/2018';
     const END_OF_LIFE = '01/2019';
 
-    /**
-     * @param string $environment The environment
-     * @param bool   $debug       Whether to enable debugging or not
-     */
-    public function __construct($environment, $debug)
+    public function __construct(string $environment, bool $debug)
     {
         $this->environment = $environment;
-        $this->debug = (bool) $debug;
+        $this->debug = $debug;
         $this->rootDir = $this->getRootDir();
         $this->name = $this->getName();
 
@@ -259,7 +255,7 @@ abstract class Kernel implements KernelInterface, RebootableInterface, Terminabl
                 throw new \RuntimeException(sprintf('"%s" resource is hidden by a resource from the "%s" derived bundle. Create a "%s" file to override the bundle resource.',
                     $file,
                     $resourceBundle,
-                    $dir.'/'.$bundles[0]->getName().$overridePath
+                    $dir.'/'.$bundle->getName().$overridePath
                 ));
             }
 
@@ -417,8 +413,6 @@ abstract class Kernel implements KernelInterface, RebootableInterface, Terminabl
      * The extension point similar to the Bundle::build() method.
      *
      * Use this method to register compiler passes and manipulate the container during the building process.
-     *
-     * @param ContainerBuilder $container
      */
     protected function build(ContainerBuilder $container)
     {
@@ -670,7 +664,7 @@ abstract class Kernel implements KernelInterface, RebootableInterface, Terminabl
         $fs = new Filesystem();
 
         foreach ($content as $file => $code) {
-            $fs->dumpFile($dir.$file, $code, null);
+            $fs->dumpFile($dir.$file, $code);
             @chmod($dir.$file, 0666 & ~umask());
         }
 

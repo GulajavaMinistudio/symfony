@@ -69,7 +69,7 @@ abstract class RegisterMappingsPass implements CompilerPassInterface
      * only do anything if the parameter is present. (But regardless of the
      * value of that parameter.
      *
-     * @var string
+     * @var string|false
      */
     protected $enabledParameter;
 
@@ -117,7 +117,7 @@ abstract class RegisterMappingsPass implements CompilerPassInterface
      *                                                      register alias
      * @param string[]             $aliasMap                Map of alias to namespace
      */
-    public function __construct($driver, array $namespaces, array $managerParameters, $driverPattern, $enabledParameter = false, $configurationPattern = '', $registerAliasMethodName = '', array $aliasMap = array())
+    public function __construct($driver, array $namespaces, array $managerParameters, string $driverPattern, $enabledParameter = false, string $configurationPattern = '', string $registerAliasMethodName = '', array $aliasMap = array())
     {
         $this->driver = $driver;
         $this->namespaces = $namespaces;

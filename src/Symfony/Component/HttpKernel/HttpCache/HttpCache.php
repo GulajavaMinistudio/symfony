@@ -67,11 +67,6 @@ class HttpCache implements HttpKernelInterface, TerminableInterface
      *                            the cache can serve a stale response when an error is encountered (default: 60).
      *                            This setting is overridden by the stale-if-error HTTP Cache-Control extension
      *                            (see RFC 5861).
-     *
-     * @param HttpKernelInterface $kernel    An HttpKernelInterface instance
-     * @param StoreInterface      $store     A Store instance
-     * @param SurrogateInterface  $surrogate A SurrogateInterface instance
-     * @param array               $options   An array of options
      */
     public function __construct(HttpKernelInterface $kernel, StoreInterface $store, SurrogateInterface $surrogate = null, array $options = array())
     {
@@ -652,23 +647,16 @@ class HttpCache implements HttpKernelInterface, TerminableInterface
 
     /**
      * Records that an event took place.
-     *
-     * @param Request $request A Request instance
-     * @param string  $event   The event name
      */
-    private function record(Request $request, $event)
+    private function record(Request $request, string $event)
     {
         $this->traces[$this->getTraceKey($request)][] = $event;
     }
 
     /**
      * Calculates the key we use in the "trace" array for a given request.
-     *
-     * @param Request $request
-     *
-     * @return string
      */
-    private function getTraceKey(Request $request)
+    private function getTraceKey(Request $request): string
     {
         $path = $request->getPathInfo();
         if ($qs = $request->getQueryString()) {
@@ -681,12 +669,8 @@ class HttpCache implements HttpKernelInterface, TerminableInterface
     /**
      * Checks whether the given (cached) response may be served as "stale" when a revalidation
      * is currently in progress.
-     *
-     * @param Response $entry
-     *
-     * @return bool true when the stale response may be served, false otherwise
      */
-    private function mayServeStaleWhileRevalidate(Response $entry)
+    private function mayServeStaleWhileRevalidate(Response $entry): bool
     {
         $timeout = $entry->headers->getCacheControlDirective('stale-while-revalidate');
 
@@ -699,12 +683,8 @@ class HttpCache implements HttpKernelInterface, TerminableInterface
 
     /**
      * Waits for the store to release a locked entry.
-     *
-     * @param Request $request The request to wait for
-     *
-     * @return bool true if the lock was released before the internal timeout was hit; false if the wait timeout was exceeded
      */
-    private function waitForLock(Request $request)
+    private function waitForLock(Request $request): bool
     {
         $wait = 0;
         while ($this->store->isLocked($request) && $wait < 5000000) {

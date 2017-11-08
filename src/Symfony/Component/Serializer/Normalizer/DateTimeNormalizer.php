@@ -25,9 +25,6 @@ class DateTimeNormalizer implements NormalizerInterface, DenormalizerInterface
     const FORMAT_KEY = 'datetime_format';
     const TIMEZONE_KEY = 'datetime_timezone';
 
-    /**
-     * @var string
-     */
     private $format;
     private $timezone;
 
@@ -37,11 +34,7 @@ class DateTimeNormalizer implements NormalizerInterface, DenormalizerInterface
         \DateTime::class => true,
     );
 
-    /**
-     * @param string             $format
-     * @param \DateTimeZone|null $timezone
-     */
-    public function __construct($format = \DateTime::RFC3339, \DateTimeZone $timezone = null)
+    public function __construct(?string $format = \DateTime::RFC3339, \DateTimeZone $timezone = null)
     {
         $this->format = $format;
         $this->timezone = $timezone;
@@ -121,8 +114,6 @@ class DateTimeNormalizer implements NormalizerInterface, DenormalizerInterface
 
     /**
      * Formats datetime errors.
-     *
-     * @param array $errors
      *
      * @return string[]
      */

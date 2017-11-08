@@ -1089,9 +1089,6 @@ class FilesystemTest extends FilesystemTestCase
         $this->assertEquals($expectedPath, $path);
     }
 
-    /**
-     * @return array
-     */
     public function providePathsForMakePathRelative()
     {
         $paths = array(
@@ -1334,9 +1331,6 @@ class FilesystemTest extends FilesystemTestCase
         $this->assertEquals($expectedResult, $result);
     }
 
-    /**
-     * @return array
-     */
     public function providePathsForIsAbsolutePath()
     {
         return array(
@@ -1608,12 +1602,8 @@ class FilesystemTest extends FilesystemTestCase
 
     /**
      * Normalize the given path (transform each blackslash into a real directory separator).
-     *
-     * @param string $path
-     *
-     * @return string
      */
-    private function normalize($path)
+    private function normalize(string $path): string
     {
         return str_replace('/', DIRECTORY_SEPARATOR, $path);
     }
