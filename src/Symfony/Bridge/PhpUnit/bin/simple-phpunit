@@ -68,7 +68,7 @@ if (!file_exists("$PHPUNIT_DIR/phpunit-$PHPUNIT_VERSION/phpunit") || md5_file(__
     if (5.1 <= $PHPUNIT_VERSION && $PHPUNIT_VERSION < 5.4) {
         passthru("$COMPOSER require --no-update phpunit/phpunit-mock-objects \"~3.1.0\"");
     }
-    passthru("$COMPOSER require --no-update symfony/phpunit-bridge \"~3.3.11@dev|~3.4.0-beta2@dev|^4.0.0-beta2@dev\"");
+    passthru("$COMPOSER require --no-update symfony/phpunit-bridge \"~3.4-beta5@dev|^4.0-beta5@dev\"");
     $prevRoot = getenv('COMPOSER_ROOT_VERSION');
     putenv("COMPOSER_ROOT_VERSION=$PHPUNIT_VERSION.99");
     $exit = proc_close(proc_open("$COMPOSER install --no-dev --prefer-dist --no-progress --ansi", array(), $p, getcwd(), null, array('bypass_shell' => true)));
@@ -81,17 +81,6 @@ if (!file_exists("$PHPUNIT_DIR/phpunit-$PHPUNIT_VERSION/phpunit") || md5_file(__
 
 define('PHPUNIT_COMPOSER_INSTALL', __DIR__.'/vendor/autoload.php');
 require PHPUNIT_COMPOSER_INSTALL;
-
-if (!class_exists('SymfonyBlacklistPhpunit', false)) {
-    class SymfonyBlacklistPhpunit {}
-}
-if (class_exists('PHPUnit_Util_Blacklist')) {
-    PHPUnit_Util_Blacklist::$blacklistedClassNames['SymfonyBlacklistPhpunit'] = 1;
-    PHPUnit_Util_Blacklist::$blacklistedClassNames['SymfonyBlacklistSimplePhpunit'] = 1;
-} else {
-    PHPUnit\Util\Blacklist::$blacklistedClassNames['SymfonyBlacklistPhpunit'] = 1;
-    PHPUnit\Util\Blacklist::$blacklistedClassNames['SymfonyBlacklistSimplePhpunit'] = 1;
-}
 
 Symfony\Bridge\PhpUnit\TextUI\Command::main();
 
@@ -211,9 +200,6 @@ if ($components) {
         }
     }
 } elseif (!isset($argv[1]) || 'install' !== $argv[1] || file_exists('install')) {
-    if (!class_exists('SymfonyBlacklistSimplePhpunit', false)) {
-        class SymfonyBlacklistSimplePhpunit {}
-    }
     array_splice($argv, 1, 0, array('--colors=always'));
     $_SERVER['argv'] = $argv;
     $_SERVER['argc'] = ++$argc;
