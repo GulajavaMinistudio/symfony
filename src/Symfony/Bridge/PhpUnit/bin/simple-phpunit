@@ -11,7 +11,7 @@
  */
 
 // Please update when phpunit needs to be reinstalled with fresh deps:
-// Cache-Id-Version: 2016-10-20 14:00 UTC
+// Cache-Id-Version: 2017-11-22 09:00 UTC
 
 error_reporting(-1);
 
@@ -26,8 +26,16 @@ if (PHP_VERSION_ID >= 70200) {
     $PHPUNIT_VERSION = '4.8';
 }
 
+$root = __DIR__;
+while (!file_exists($root.'/composer.json') || file_exists($root.'/bin/simple-phpunit')) {
+    if ($root === dirname($root)) {
+        break;
+    }
+    $root = dirname($root);
+}
+
 $oldPwd = getcwd();
-$PHPUNIT_DIR = getenv('SYMFONY_PHPUNIT_DIR') ?: (__DIR__.'/.phpunit');
+$PHPUNIT_DIR = getenv('SYMFONY_PHPUNIT_DIR') ?: ($root.'/vendor/bin/.phpunit');
 $PHP = defined('PHP_BINARY') ? PHP_BINARY : 'php';
 $PHP = escapeshellarg($PHP);
 if ('phpdbg' === PHP_SAPI) {
@@ -68,7 +76,15 @@ if (!file_exists("$PHPUNIT_DIR/phpunit-$PHPUNIT_VERSION/phpunit") || md5_file(__
     if (5.1 <= $PHPUNIT_VERSION && $PHPUNIT_VERSION < 5.4) {
         passthru("$COMPOSER require --no-update phpunit/phpunit-mock-objects \"~3.1.0\"");
     }
-    passthru("$COMPOSER require --no-update symfony/phpunit-bridge \"~3.4-beta5@dev|^4.0-beta5@dev\"");
+    if (file_exists($path = $root.'/vendor/symfony/phpunit-bridge')) {
+        passthru("$COMPOSER require --no-update symfony/phpunit-bridge \"*@dev\"");
+        passthru("$COMPOSER config repositories.phpunit-bridge path ".escapeshellarg(str_replace('/', DIRECTORY_SEPARATOR, $path)));
+        if ('\\' === DIRECTORY_SEPARATOR) {
+            file_put_contents('composer.json', preg_replace('/^( {8})"phpunit-bridge": \{$/m', "$0\n$1    ".'"options": {"symlink": false},', file_get_contents('composer.json')));
+        }
+    } else {
+        passthru("$COMPOSER require --no-update symfony/phpunit-bridge \"*\"");
+    }
     $prevRoot = getenv('COMPOSER_ROOT_VERSION');
     putenv("COMPOSER_ROOT_VERSION=$PHPUNIT_VERSION.99");
     $exit = proc_close(proc_open("$COMPOSER install --no-dev --prefer-dist --no-progress --ansi", array(), $p, getcwd(), null, array('bypass_shell' => true)));
@@ -81,6 +97,17 @@ if (!file_exists("$PHPUNIT_DIR/phpunit-$PHPUNIT_VERSION/phpunit") || md5_file(__
 
 define('PHPUNIT_COMPOSER_INSTALL', __DIR__.'/vendor/autoload.php');
 require PHPUNIT_COMPOSER_INSTALL;
+
+if (!class_exists('SymfonyBlacklistPhpunit', false)) {
+    class SymfonyBlacklistPhpunit {}
+}
+if (class_exists('PHPUnit_Util_Blacklist')) {
+    PHPUnit_Util_Blacklist::$blacklistedClassNames['SymfonyBlacklistPhpunit'] = 1;
+    PHPUnit_Util_Blacklist::$blacklistedClassNames['SymfonyBlacklistSimplePhpunit'] = 1;
+} else {
+    PHPUnit\Util\Blacklist::$blacklistedClassNames['SymfonyBlacklistPhpunit'] = 1;
+    PHPUnit\Util\Blacklist::$blacklistedClassNames['SymfonyBlacklistSimplePhpunit'] = 1;
+}
 
 Symfony\Bridge\PhpUnit\TextUI\Command::main();
 
@@ -200,6 +227,9 @@ if ($components) {
         }
     }
 } elseif (!isset($argv[1]) || 'install' !== $argv[1] || file_exists('install')) {
+    if (!class_exists('SymfonyBlacklistSimplePhpunit', false)) {
+        class SymfonyBlacklistSimplePhpunit {}
+    }
     array_splice($argv, 1, 0, array('--colors=always'));
     $_SERVER['argv'] = $argv;
     $_SERVER['argc'] = ++$argc;
