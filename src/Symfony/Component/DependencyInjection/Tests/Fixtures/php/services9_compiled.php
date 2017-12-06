@@ -18,7 +18,11 @@ class ProjectServiceContainer extends Container
 {
     private $parameters;
     private $targetDirs = array();
-    private $privates = array();
+
+    /**
+     * @internal but protected for BC on cache:clear
+     */
+    protected $privates = array();
 
     public function __construct()
     {
@@ -340,7 +344,7 @@ class ProjectServiceContainer extends Container
      */
     protected function getMethodCall1Service()
     {
-        require_once '%path%foo.php';
+        include_once '%path%foo.php';
 
         $this->services['method_call1'] = $instance = new \Bar\FooClass();
 
