@@ -35,6 +35,8 @@ use Symfony\Component\DependencyInjection\EnvVarProcessorInterface;
 use Symfony\Component\DependencyInjection\Exception\InvalidArgumentException;
 use Symfony\Component\DependencyInjection\Exception\LogicException;
 use Symfony\Component\DependencyInjection\Loader\XmlFileLoader;
+use Symfony\Component\DependencyInjection\ParameterBag\ContainerBagInterface;
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\DependencyInjection\Reference;
 use Symfony\Component\DependencyInjection\ServiceSubscriberInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
@@ -62,6 +64,7 @@ use Symfony\Component\Routing\Loader\AnnotationFileLoader;
 use Symfony\Component\Security\Core\Security;
 use Symfony\Component\Serializer\Encoder\DecoderInterface;
 use Symfony\Component\Serializer\Encoder\EncoderInterface;
+use Symfony\Component\Serializer\Mapping\ClassDiscriminatorFromClassMetadata;
 use Symfony\Component\Serializer\Mapping\Factory\CacheClassMetadataFactory;
 use Symfony\Component\Serializer\Normalizer\DateIntervalNormalizer;
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
@@ -109,6 +112,12 @@ class FrameworkExtension extends Extension
         $loader->load('web.xml');
         $loader->load('services.xml');
         $loader->load('fragment_renderer.xml');
+
+        if (!interface_exists(ContainerBagInterface::class)) {
+            $container->removeDefinition('parameter_bag');
+            $container->removeAlias(ContainerBagInterface::class);
+            $container->removeAlias(ParameterBagInterface::class);
+        }
 
         if (class_exists(Application::class)) {
             $loader->load('console.xml');
@@ -498,7 +507,7 @@ class FrameworkExtension extends Extension
             // Add workflow to Registry
             if ($workflow['supports']) {
                 foreach ($workflow['supports'] as $supportedClassName) {
-                    $strategyDefinition = new Definition(Workflow\SupportStrategy\ClassInstanceSupportStrategy::class, array($supportedClassName));
+                    $strategyDefinition = new Definition(Workflow\SupportStrategy\InstanceOfSupportStrategy::class, array($supportedClassName));
                     $strategyDefinition->setPublic(false);
                     $registryDefinition->addMethodCall('add', array(new Reference($workflowId), $strategyDefinition));
                 }
@@ -1151,6 +1160,11 @@ class FrameworkExtension extends Extension
 
         if (!class_exists(DateIntervalNormalizer::class)) {
             $container->removeDefinition('serializer.normalizer.dateinterval');
+        }
+
+        if (!class_exists(ClassDiscriminatorFromClassMetadata::class)) {
+            $container->removeAlias('Symfony\Component\Serializer\Mapping\ClassDiscriminatorResolverInterface');
+            $container->removeDefinition('serializer.mapping.class_discriminator_resolver');
         }
 
         $chainLoader = $container->getDefinition('serializer.mapping.chain_loader');
