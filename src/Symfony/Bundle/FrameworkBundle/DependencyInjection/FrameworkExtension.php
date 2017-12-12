@@ -168,6 +168,7 @@ class FrameworkExtension extends Extension
                     'emacs' => 'emacs://open?url=file://%%f&line=%%l',
                     'sublime' => 'subl://open?url=file://%%f&line=%%l',
                     'phpstorm' => 'phpstorm://open?file=%%f&line=%%l',
+                    'atom' => 'atom://core/open/file?filename=%%f&line=%%l',
                 );
                 $ide = $config['ide'];
 
@@ -617,6 +618,13 @@ class FrameworkExtension extends Extension
         }
 
         $loader->load('routing.xml');
+
+        if (!interface_exists(ContainerBagInterface::class)) {
+            $container->getDefinition('router.default')
+                ->replaceArgument(0, new Reference('service_container'))
+                ->clearTag('container.service_subscriber')
+            ;
+        }
 
         $container->setParameter('router.resource', $config['resource']);
         $container->setParameter('router.cache_class_prefix', $container->getParameter('kernel.container_class'));
