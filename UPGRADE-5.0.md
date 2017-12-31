@@ -17,6 +17,7 @@ SecurityBundle
 --------------
 
  * The `logout_on_user_change` firewall option has been removed.
+ * The `SecurityUserValueResolver` class has been removed.
 
 Translation
 -----------
@@ -29,7 +30,7 @@ Validator
 
  * The `Email::__construct()` 'strict' property has been removed. Use 'mode'=>"strict" instead.
  * Calling `EmailValidator::__construct()` method with a boolean parameter has been removed, use `EmailValidator("strict")` instead.
-
+ * Removed the `checkDNS` and `dnsMessage` options from the `Url` constraint.
 
 Workflow
 --------
