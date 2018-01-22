@@ -12,7 +12,6 @@
 namespace Symfony\Component\Config\Tests\Definition\Builder;
 
 use PHPUnit\Framework\TestCase;
-use Symfony\Component\Config\Definition\Processor;
 use Symfony\Component\Config\Tests\Fixtures\Builder\NodeBuilder as CustomNodeBuilder;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 
@@ -133,21 +132,64 @@ class TreeBuilderTest extends TestCase
         $this->assertEquals('example', $children['child']->getExample());
     }
 
-    public function testRootNodeThatCanBeEnabledIsDisabledByDefault()
+    public function testDefaultPathSeparatorIsDot()
     {
         $builder = new TreeBuilder();
 
-        $builder->root('test')
-            ->canBeEnabled();
+        $builder->root('propagation')
+            ->children()
+                ->node('foo', 'variable')->end()
+                ->arrayNode('child')
+                    ->children()
+                        ->node('foo', 'variable')
+                    ->end()
+                ->end()
+            ->end()
+        ->end();
 
-        $tree = $builder->buildTree();
-        $children = $tree->getChildren();
+        $node = $builder->buildTree();
+        $children = $node->getChildren();
 
-        $this->assertFalse($children['enabled']->getDefaultValue());
+        $this->assertArrayHasKey('foo', $children);
+        $this->assertInstanceOf('Symfony\Component\Config\Definition\BaseNode', $children['foo']);
+        $this->assertSame('propagation.foo', $children['foo']->getPath());
 
-        $processor = new Processor();
-        $result = $processor->process($tree, array());
+        $this->assertArrayHasKey('child', $children);
+        $childChildren = $children['child']->getChildren();
 
-        $this->assertEquals(array('enabled' => false), $result);
+        $this->assertArrayHasKey('foo', $childChildren);
+        $this->assertInstanceOf('Symfony\Component\Config\Definition\BaseNode', $childChildren['foo']);
+        $this->assertSame('propagation.child.foo', $childChildren['foo']->getPath());
+    }
+
+    public function testPathSeparatorIsPropagatedToChildren()
+    {
+        $builder = new TreeBuilder();
+
+        $builder->root('propagation')
+            ->children()
+                ->node('foo', 'variable')->end()
+                ->arrayNode('child')
+                    ->children()
+                        ->node('foo', 'variable')
+                    ->end()
+                ->end()
+            ->end()
+        ->end();
+
+        $builder->setPathSeparator('/');
+        $node = $builder->buildTree();
+        $children = $node->getChildren();
+
+        $this->assertArrayHasKey('foo', $children);
+        $this->assertInstanceOf('Symfony\Component\Config\Definition\BaseNode', $children['foo']);
+        $this->assertSame('propagation/foo', $children['foo']->getPath());
+
+        $this->assertArrayHasKey('child', $children);
+        $childChildren = $children['child']->getChildren();
+
+        $this->assertArrayHasKey('foo', $childChildren);
+        $this->assertInstanceOf('Symfony\Component\Config\Definition\BaseNode', $childChildren['foo']);
+        $this->assertSame('propagation/child/foo', $childChildren['foo']->getPath());
     }
 }
