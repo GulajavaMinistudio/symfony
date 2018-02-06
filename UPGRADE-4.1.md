@@ -29,6 +29,10 @@ Security
 --------
 
  * The `ContextListener::setLogoutOnUserChange()` method is deprecated and will be removed in 5.0.
+ * Using the `AdvancedUserInterface` is now deprecated. To use the existing
+   functionality, create a custom user-checker based on the
+   `Symfony\Component\Security\Core\User\UserChecker`. This functionality will
+   be removed in Symfony 5.0.
 
 SecurityBundle
 --------------
@@ -42,6 +46,11 @@ Translation
 
  * The `FileDumper::setBackup()` method is deprecated and will be removed in 5.0.
  * The `TranslationWriter::disableBackup()` method is deprecated and will be removed in 5.0.
+
+TwigBundle
+----------
+
+ * Deprecated relying on the default value (`false`) of the `twig.strict_variables` configuration option. You should use `%kernel.debug%` explicitly instead, which will be the new default in 5.0.
 
 Validator
 --------
