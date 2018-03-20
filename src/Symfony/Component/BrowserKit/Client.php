@@ -79,7 +79,7 @@ abstract class Client
     }
 
     /**
-     * Sets the maximum number of requests that crawler can follow.
+     * Sets the maximum number of redirects that crawler can follow.
      *
      * @param int $maxRedirects
      */
@@ -90,7 +90,7 @@ abstract class Client
     }
 
     /**
-     * Returns the maximum number of requests that crawler can follow.
+     * Returns the maximum number of redirects that crawler can follow.
      *
      * @return int
      */
@@ -151,14 +151,15 @@ abstract class Client
         return isset($this->server[$key]) ? $this->server[$key] : $default;
     }
 
-    public function switchToXHR()
+    public function xmlHttpRequest(string $method, string $uri, array $parameters = array(), array $files = array(), array $server = array(), string $content = null, bool $changeHistory = true): Crawler
     {
         $this->setServerParameter('HTTP_X_REQUESTED_WITH', 'XMLHttpRequest');
-    }
 
-    public function removeXHR()
-    {
-        unset($this->server['HTTP_X_REQUESTED_WITH']);
+        try {
+            return $this->request($method, $uri, $parameters, $files, $server, $content, $changeHistory);
+        } finally {
+            unset($this->server['HTTP_X_REQUESTED_WITH']);
+        }
     }
 
     /**
