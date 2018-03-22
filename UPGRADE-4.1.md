@@ -12,6 +12,11 @@ Console
 
  * Deprecated the `setCrossingChar()` method in favor of the `setDefaultCrossingChar()` method in `TableStyle`.
 
+DependencyInjection
+-------------------
+
+ * Deprecated the `TypedReference::canBeAutoregistered()` and  `TypedReference::getRequiringClass()` methods.
+
 EventDispatcher
 ---------------
 
@@ -79,6 +84,11 @@ SecurityBundle
  * The `switch_user.stateless` firewall option is deprecated, use the `stateless` option instead.
  * The `SecurityUserValueResolver` class is deprecated, use
    `Symfony\Component\Security\Http\Controller\UserValueResolver` instead.
+
+Serializer
+----------
+
+ * Decoding XML with `XmlEncoder` now ignores comment node types by default.
 
 Translation
 -----------
