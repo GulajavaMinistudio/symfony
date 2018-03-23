@@ -59,6 +59,8 @@ use Symfony\Component\Lock\Lock;
 use Symfony\Component\Lock\LockInterface;
 use Symfony\Component\Lock\Store\StoreFactory;
 use Symfony\Component\Lock\StoreInterface;
+use Symfony\Component\Messenger\Transport\ReceiverInterface;
+use Symfony\Component\Messenger\Transport\SenderInterface;
 use Symfony\Component\PropertyAccess\PropertyAccessor;
 use Symfony\Component\PropertyInfo\PropertyAccessExtractorInterface;
 use Symfony\Component\PropertyInfo\PropertyDescriptionExtractorInterface;
@@ -73,6 +75,7 @@ use Symfony\Component\Serializer\Encoder\EncoderInterface;
 use Symfony\Component\Serializer\Mapping\ClassDiscriminatorFromClassMetadata;
 use Symfony\Component\Serializer\Mapping\Factory\CacheClassMetadataFactory;
 use Symfony\Component\Serializer\Normalizer\DateIntervalNormalizer;
+use Symfony\Component\Serializer\Normalizer\ConstraintViolationListNormalizer;
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 use Symfony\Component\Stopwatch\Stopwatch;
@@ -266,6 +269,12 @@ class FrameworkExtension extends Extension
             $this->registerLockConfiguration($config['lock'], $container, $loader);
         }
 
+        if ($this->isConfigEnabled($container, $config['messenger'])) {
+            $this->registerMessengerConfiguration($config['messenger'], $container, $loader);
+        } else {
+            $container->removeDefinition('console.command.messenger_consume_messages');
+        }
+
         if ($this->isConfigEnabled($container, $config['web_link'])) {
             if (!class_exists(HttpHeaderSerializer::class)) {
                 throw new LogicException('WebLink support cannot be enabled as the WebLink component is not installed.');
@@ -333,6 +342,10 @@ class FrameworkExtension extends Extension
             ->addTag('validator.constraint_validator');
         $container->registerForAutoconfiguration(ObjectInitializerInterface::class)
             ->addTag('validator.initializer');
+        $container->registerForAutoconfiguration(ReceiverInterface::class)
+            ->addTag('messenger.receiver');
+        $container->registerForAutoconfiguration(SenderInterface::class)
+            ->addTag('messenger.sender');
 
         if (!$container->getParameter('kernel.debug')) {
             // remove tagged iterator argument for resource checkers
@@ -1227,6 +1240,10 @@ class FrameworkExtension extends Extension
             $container->removeDefinition('serializer.normalizer.dateinterval');
         }
 
+        if (!class_exists(ConstraintViolationListNormalizer::class)) {
+            $container->removeDefinition('serializer.normalizer.constraint_violation_list');
+        }
+
         if (!class_exists(ClassDiscriminatorFromClassMetadata::class)) {
             $container->removeAlias('Symfony\Component\Serializer\Mapping\ClassDiscriminatorResolverInterface');
             $container->removeDefinition('serializer.mapping.class_discriminator_resolver');
@@ -1408,6 +1425,26 @@ class FrameworkExtension extends Extension
                 $container->setAlias(LockInterface::class, new Alias('lock', false));
             }
         }
+    }
+
+    private function registerMessengerConfiguration(array $config, ContainerBuilder $container, XmlFileLoader $loader)
+    {
+        $loader->load('messenger.xml');
+
+        $senderLocatorMapping = array();
+        $messageToSenderIdsMapping = array();
+        foreach ($config['routing'] as $message => $messageConfiguration) {
+            foreach ($messageConfiguration['senders'] as $sender) {
+                if (null !== $sender) {
+                    $senderLocatorMapping[$sender] = new Reference($sender);
+                }
+            }
+
+            $messageToSenderIdsMapping[$message] = $messageConfiguration['senders'];
+        }
+
+        $container->getDefinition('messenger.sender_locator')->replaceArgument(0, $senderLocatorMapping);
+        $container->getDefinition('messenger.asynchronous.routing.sender_locator')->replaceArgument(1, $messageToSenderIdsMapping);
     }
 
     private function registerCacheConfiguration(array $config, ContainerBuilder $container)
