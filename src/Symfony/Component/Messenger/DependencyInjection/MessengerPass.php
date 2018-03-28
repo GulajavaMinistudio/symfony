@@ -31,7 +31,7 @@ class MessengerPass implements CompilerPassInterface
     private $messageHandlerResolverService;
     private $handlerTag;
 
-    public function __construct(string $messageBusService = 'message_bus', string $messageHandlerResolverService = 'messenger.handler_resolver', string $handlerTag = 'message_handler')
+    public function __construct(string $messageBusService = 'message_bus', string $messageHandlerResolverService = 'messenger.handler_resolver', string $handlerTag = 'messenger.message_handler')
     {
         $this->messageBusService = $messageBusService;
         $this->messageHandlerResolverService = $messageHandlerResolverService;
@@ -49,6 +49,12 @@ class MessengerPass implements CompilerPassInterface
 
         if (!$container->getParameter('kernel.debug') || !$container->has('logger')) {
             $container->removeDefinition('messenger.middleware.debug.logging');
+        }
+
+        if (!$container->has('serializer')) {
+            $container->removeDefinition('messenger.transport.serialize_message_with_type_in_headers');
+            $container->removeAlias('messenger.transport.default_encoder');
+            $container->removeAlias('messenger.transport.default_decoder');
         }
 
         $this->registerReceivers($container);

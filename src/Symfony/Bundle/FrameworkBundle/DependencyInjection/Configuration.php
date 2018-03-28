@@ -888,10 +888,14 @@ class Configuration implements ConfigurationInterface
                     ->info('PHP errors handling configuration')
                     ->addDefaultsIfNotSet()
                     ->children()
-                        ->booleanNode('log')
+                        ->scalarNode('log')
                             ->info('Use the app logger instead of the PHP logger for logging PHP errors.')
                             ->defaultValue($this->debug)
                             ->treatNullLike($this->debug)
+                            ->validate()
+                            ->ifTrue(function ($v) { return !(\is_int($v) || \is_bool($v)); })
+                            ->thenInvalid('The "php_errors.log" parameter should be either an integer or a boolean.')
+                           ->end()
                         ->end()
                         ->booleanNode('throw')
                             ->info('Throw PHP errors as \ErrorException instances.')
@@ -969,18 +973,42 @@ class Configuration implements ConfigurationInterface
                     ->children()
                         ->arrayNode('routing')
                             ->useAttributeAsKey('message_class')
+                            ->beforeNormalization()
+                                ->always()
+                                ->then(function ($config) {
+                                    $newConfig = array();
+                                    foreach ($config as $k => $v) {
+                                        if (!is_int($k)) {
+                                            $newConfig[$k] = array('senders' => is_array($v) ? array_values($v) : array($v));
+                                        } else {
+                                            $newConfig[$v['message-class']]['senders'] = array_map(
+                                                function ($a) {
+                                                    return is_string($a) ? $a : $a['service'];
+                                                },
+                                                array_values($v['sender'])
+                                            );
+                                        }
+                                    }
+
+                                    return $newConfig;
+                                })
+                            ->end()
                             ->prototype('array')
-                                ->beforeNormalization()
-                                    ->ifString()
-                                    ->then(function ($v) {
-                                        return array('senders' => array($v));
-                                    })
-                                ->end()
                                 ->children()
                                     ->arrayNode('senders')
                                         ->requiresAtLeastOneElement()
                                         ->prototype('scalar')->end()
                                     ->end()
+                                ->end()
+                            ->end()
+                        ->end()
+                        ->arrayNode('middlewares')
+                            ->addDefaultsIfNotSet()
+                            ->children()
+                            ->arrayNode('doctrine_transaction')
+                                ->canBeEnabled()
+                                ->children()
+                                    ->scalarNode('entity_manager_name')->info('The name of the entity manager to use')->defaultNull()->end()
                                 ->end()
                             ->end()
                         ->end()

@@ -25,6 +25,13 @@
             <tag name="message_bus_middleware" priority="-10" />
         </service>
 
+        <service id="messenger.middleware.doctrine_transaction" class="Symfony\Bridge\Doctrine\Messenger\DoctrineTransactionMiddleware">
+            <argument type="service" id="doctrine" />
+            <argument /> <!-- Entity manager name -->
+
+            <tag name="message_bus_middleware" priority="9" />
+        </service>
+
         <!-- Asynchronous -->
         <service id="messenger.asynchronous.routing.sender_locator" class="Symfony\Component\Messenger\Asynchronous\Routing\SenderLocator">
             <argument type="service" id="messenger.sender_locator" />
@@ -53,7 +60,7 @@
         </service>
 
         <service id="data_collector.messenger" class="Symfony\Bundle\FrameworkBundle\DataCollector\MessengerDataCollector">
-            <tag name="data_collector" template="@WebProfiler/Collector/messages.html.twig" id="messages" priority="100" />
+            <tag name="data_collector" template="@WebProfiler/Collector/messenger.html.twig" id="messenger" priority="100" />
             <tag name="message_bus_middleware" />
         </service>
 
