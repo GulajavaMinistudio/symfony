@@ -9,13 +9,13 @@
  * file that was distributed with this source code.
  */
 
-namespace Symfony\Component\Intl\Exception;
+namespace Symfony\Component\HttpFoundation\File\Exception;
 
 /**
- * Base ExceptionInterface for the Intl component.
+ * Thrown when an UPLOAD_ERR_NO_FILE error occurred with UploadedFile.
  *
- * @author Bernhard Schussek <bschussek@gmail.com>
+ * @author Florent Mata <florentmata@gmail.com>
  */
-interface ExceptionInterface extends \Throwable
+class NoFileException extends FileException
 {
 }
