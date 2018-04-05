@@ -18,7 +18,10 @@ use Symfony\Component\DependencyInjection\Reference;
 use Symfony\Component\DependencyInjection\ServiceLocator;
 use Symfony\Component\Messenger\ContainerHandlerLocator;
 use Symfony\Component\Messenger\DependencyInjection\MessengerPass;
+use Symfony\Component\Messenger\Handler\ChainHandler;
+use Symfony\Component\Messenger\Handler\MessageSubscriberInterface;
 use Symfony\Component\Messenger\Tests\Fixtures\DummyMessage;
+use Symfony\Component\Messenger\Tests\Fixtures\SecondMessage;
 use Symfony\Component\Messenger\Transport\ReceiverInterface;
 
 class MessengerPassTest extends TestCase
@@ -31,6 +34,10 @@ class MessengerPassTest extends TestCase
             ->addTag('messenger.message_handler')
         ;
         $container
+            ->register(MissingArgumentTypeHandler::class, MissingArgumentTypeHandler::class)
+            ->addTag('messenger.message_handler', array('handles' => SecondMessage::class))
+        ;
+        $container
             ->register(DummyReceiver::class, DummyReceiver::class)
             ->addTag('messenger.receiver')
         ;
@@ -40,7 +47,10 @@ class MessengerPassTest extends TestCase
         $handlerLocatorDefinition = $container->getDefinition($container->getDefinition('messenger.handler_resolver')->getArgument(0));
         $this->assertSame(ServiceLocator::class, $handlerLocatorDefinition->getClass());
         $this->assertEquals(
-            array('handler.'.DummyMessage::class => new ServiceClosureArgument(new Reference(DummyHandler::class))),
+            array(
+                'handler.'.DummyMessage::class => new ServiceClosureArgument(new Reference(DummyHandler::class)),
+                'handler.'.SecondMessage::class => new ServiceClosureArgument(new Reference(MissingArgumentTypeHandler::class)),
+            ),
             $handlerLocatorDefinition->getArgument(0)
         );
 
@@ -48,6 +58,34 @@ class MessengerPassTest extends TestCase
             array(DummyReceiver::class => new Reference(DummyReceiver::class)),
             $container->getDefinition('messenger.receiver_locator')->getArgument(0)
         );
+    }
+
+    public function testGetClassesFromTheHandlerSubscriberInterface()
+    {
+        $container = $this->getContainerBuilder();
+        $container
+            ->register(HandlerWithMultipleMessages::class, HandlerWithMultipleMessages::class)
+            ->addTag('messenger.message_handler')
+        ;
+        $container
+            ->register(PrioritizedHandler::class, PrioritizedHandler::class)
+            ->addTag('messenger.message_handler')
+        ;
+
+        (new MessengerPass())->process($container);
+
+        $handlerLocatorDefinition = $container->getDefinition($container->getDefinition('messenger.handler_resolver')->getArgument(0));
+        $handlerMapping = $handlerLocatorDefinition->getArgument(0);
+
+        $this->assertArrayHasKey('handler.'.DummyMessage::class, $handlerMapping);
+        $this->assertEquals(new ServiceClosureArgument(new Reference(HandlerWithMultipleMessages::class)), $handlerMapping['handler.'.DummyMessage::class]);
+
+        $this->assertArrayHasKey('handler.'.SecondMessage::class, $handlerMapping);
+        $handlerReference = (string) $handlerMapping['handler.'.SecondMessage::class]->getValues()[0];
+        $definition = $container->getDefinition($handlerReference);
+
+        $this->assertSame(ChainHandler::class, $definition->getClass());
+        $this->assertEquals(array(new Reference(PrioritizedHandler::class), new Reference(HandlerWithMultipleMessages::class)), $definition->getArgument(0));
     }
 
     /**
@@ -59,6 +97,21 @@ class MessengerPassTest extends TestCase
         $container = $this->getContainerBuilder();
         $container
             ->register(UndefinedMessageHandler::class, UndefinedMessageHandler::class)
+            ->addTag('messenger.message_handler')
+        ;
+
+        (new MessengerPass())->process($container);
+    }
+
+    /**
+     * @expectedException \Symfony\Component\DependencyInjection\Exception\RuntimeException
+     * @expectedExceptionMessage Invalid handler service "Symfony\Component\Messenger\Tests\DependencyInjection\UndefinedMessageHandlerViaInterface": message class "Symfony\Component\Messenger\Tests\DependencyInjection\UndefinedMessage" returned by method "Symfony\Component\Messenger\Tests\DependencyInjection\UndefinedMessageHandlerViaInterface::getHandledMessages()" does not exist.
+     */
+    public function testUndefinedMessageClassForHandlerViaInterface()
+    {
+        $container = $this->getContainerBuilder();
+        $container
+            ->register(UndefinedMessageHandlerViaInterface::class, UndefinedMessageHandlerViaInterface::class)
             ->addTag('messenger.message_handler')
         ;
 
@@ -125,6 +178,21 @@ class MessengerPassTest extends TestCase
         (new MessengerPass())->process($container);
     }
 
+    /**
+     * @expectedException \Symfony\Component\DependencyInjection\Exception\RuntimeException
+     * @expectedExceptionMessage Invalid handler service "Symfony\Component\Messenger\Tests\DependencyInjection\HandleNoMessageHandler": method "Symfony\Component\Messenger\Tests\DependencyInjection\HandleNoMessageHandler::getHandledMessages()" must return one or more messages.
+     */
+    public function testNeedsToHandleAtLeastOneMessage()
+    {
+        $container = $this->getContainerBuilder();
+        $container
+            ->register(HandleNoMessageHandler::class, HandleNoMessageHandler::class)
+            ->addTag('messenger.message_handler')
+        ;
+
+        (new MessengerPass())->process($container);
+    }
+
     private function getContainerBuilder(): ContainerBuilder
     {
         $container = new ContainerBuilder();
@@ -168,6 +236,18 @@ class UndefinedMessageHandler
     }
 }
 
+class UndefinedMessageHandlerViaInterface implements MessageSubscriberInterface
+{
+    public static function getHandledMessages(): array
+    {
+        return array(UndefinedMessage::class);
+    }
+
+    public function __invoke()
+    {
+    }
+}
+
 class NotInvokableHandler
 {
 }
@@ -190,5 +270,34 @@ class BuiltinArgumentTypeHandler
 {
     public function __invoke(string $message)
     {
+    }
+}
+
+class HandlerWithMultipleMessages implements MessageSubscriberInterface
+{
+    public static function getHandledMessages(): array
+    {
+        return array(
+            DummyMessage::class,
+            SecondMessage::class,
+        );
+    }
+}
+
+class PrioritizedHandler implements MessageSubscriberInterface
+{
+    public static function getHandledMessages(): array
+    {
+        return array(
+            array(SecondMessage::class, 10),
+        );
+    }
+}
+
+class HandleNoMessageHandler implements MessageSubscriberInterface
+{
+    public static function getHandledMessages(): array
+    {
+        return array();
     }
 }

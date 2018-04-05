@@ -8,7 +8,7 @@
     <framework:config>
         <framework:messenger>
             <framework:middlewares>
-                <framework:doctrine-transaction entity-manager-name="foobar" />
+                <framework:validation enabled="false"/>
             </framework:middlewares>
         </framework:messenger>
     </framework:config>

@@ -13,7 +13,6 @@ namespace Symfony\Bundle\FrameworkBundle\DependencyInjection;
 
 use Doctrine\Common\Annotations\Reader;
 use Doctrine\Common\Annotations\AnnotationRegistry;
-use Symfony\Bridge\Doctrine\Messenger\DoctrineTransactionMiddleware;
 use Symfony\Bridge\Monolog\Processor\DebugProcessor;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
@@ -60,6 +59,7 @@ use Symfony\Component\Lock\Lock;
 use Symfony\Component\Lock\LockInterface;
 use Symfony\Component\Lock\Store\StoreFactory;
 use Symfony\Component\Lock\StoreInterface;
+use Symfony\Component\Messenger\Handler\MessageHandlerInterface;
 use Symfony\Component\Messenger\Transport\ReceiverInterface;
 use Symfony\Component\Messenger\Transport\SenderInterface;
 use Symfony\Component\PropertyAccess\PropertyAccessor;
@@ -347,6 +347,8 @@ class FrameworkExtension extends Extension
             ->addTag('messenger.receiver');
         $container->registerForAutoconfiguration(SenderInterface::class)
             ->addTag('messenger.sender');
+        $container->registerForAutoconfiguration(MessageHandlerInterface::class)
+            ->addTag('messenger.message_handler');
 
         if (!$container->getParameter('kernel.debug')) {
             // remove tagged iterator argument for resource checkers
@@ -1451,13 +1453,12 @@ class FrameworkExtension extends Extension
         $container->getDefinition('messenger.sender_locator')->replaceArgument(0, $senderLocatorMapping);
         $container->getDefinition('messenger.asynchronous.routing.sender_locator')->replaceArgument(1, $messageToSenderIdsMapping);
 
-        if ($config['middlewares']['doctrine_transaction']['enabled']) {
-            if (!class_exists(DoctrineTransactionMiddleware::class)) {
-                throw new LogicException('The Doctrine transaction middleware is only available when the doctrine bridge is installed. Try running "composer require symfony/doctrine-bridge".');
+        if ($config['middlewares']['validation']['enabled']) {
+            if (!$container->has('validator')) {
+                throw new LogicException('The Validation middleware is only available when the Validator component is installed and enabled. Try running "composer require symfony/validator".');
             }
-            $container->getDefinition('messenger.middleware.doctrine_transaction')->replaceArgument(1, $config['middlewares']['doctrine_transaction']['entity_manager_name']);
         } else {
-            $container->removeDefinition('messenger.middleware.doctrine_transaction');
+            $container->removeDefinition('messenger.middleware.validator');
         }
     }
 

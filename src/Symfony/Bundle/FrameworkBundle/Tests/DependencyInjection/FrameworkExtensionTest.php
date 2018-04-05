@@ -12,7 +12,6 @@
 namespace Symfony\Bundle\FrameworkBundle\Tests\DependencyInjection;
 
 use Doctrine\Common\Annotations\Annotation;
-use Symfony\Bridge\Doctrine\ContainerAwareEventManager;
 use Symfony\Bundle\FullStack;
 use Symfony\Bundle\FrameworkBundle\Tests\TestCase;
 use Symfony\Bundle\FrameworkBundle\DependencyInjection\Compiler\AddAnnotationsCachedReaderPass;
@@ -45,6 +44,7 @@ use Symfony\Component\Serializer\Normalizer\DateTimeNormalizer;
 use Symfony\Component\Serializer\Normalizer\JsonSerializableNormalizer;
 use Symfony\Component\Translation\DependencyInjection\TranslatorPass;
 use Symfony\Component\Validator\DependencyInjection\AddConstraintValidatorsPass;
+use Symfony\Component\Validator\Validation;
 use Symfony\Component\Workflow;
 
 abstract class FrameworkExtensionTest extends TestCase
@@ -520,16 +520,14 @@ abstract class FrameworkExtensionTest extends TestCase
         $this->assertFalse($container->hasDefinition('messenger.middleware.doctrine_transaction'));
     }
 
-    public function testMessengerDoctrine()
+    public function testMessengerValidationDisabled()
     {
-        if (!class_exists(ContainerAwareEventManager::class)) {
-            self::markTestSkipped('Skipping tests since Doctrine bridge is not installed');
+        if (!class_exists(Validation::class)) {
+            self::markTestSkipped('Skipping tests since Validator component is not installed');
         }
 
-        $container = $this->createContainerFromFile('messenger_doctrine');
-        $this->assertTrue($container->hasDefinition('messenger.middleware.doctrine_transaction'));
-        $def = $container->getDefinition('messenger.middleware.doctrine_transaction');
-        $this->assertEquals('foobar', $def->getArgument(1));
+        $container = $this->createContainerFromFile('messenger_validation');
+        $this->assertFalse($container->hasDefinition('messenger.middleware.validator'));
     }
 
     public function testTranslator()
