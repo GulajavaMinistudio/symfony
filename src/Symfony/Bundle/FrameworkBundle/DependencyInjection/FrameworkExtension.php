@@ -14,6 +14,7 @@ namespace Symfony\Bundle\FrameworkBundle\DependencyInjection;
 use Doctrine\Common\Annotations\Reader;
 use Doctrine\Common\Annotations\AnnotationRegistry;
 use Symfony\Bridge\Monolog\Processor\DebugProcessor;
+use Symfony\Bridge\Twig\Extension\CsrfExtension;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use Symfony\Bundle\FrameworkBundle\Routing\AnnotatedRouteControllerLoader;
@@ -60,6 +61,7 @@ use Symfony\Component\Lock\LockInterface;
 use Symfony\Component\Lock\Store\StoreFactory;
 use Symfony\Component\Lock\StoreInterface;
 use Symfony\Component\Messenger\Handler\MessageHandlerInterface;
+use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Messenger\Transport\ReceiverInterface;
 use Symfony\Component\Messenger\Transport\SenderInterface;
 use Symfony\Component\PropertyAccess\PropertyAccessor;
@@ -1237,6 +1239,10 @@ class FrameworkExtension extends Extension
 
         // Enable services for CSRF protection (even without forms)
         $loader->load('security_csrf.xml');
+
+        if (!class_exists(CsrfExtension::class)) {
+            $container->removeDefinition('twig.extension.security_csrf');
+        }
     }
 
     private function registerSerializerConfiguration(array $config, ContainerBuilder $container, XmlFileLoader $loader)
@@ -1436,6 +1442,10 @@ class FrameworkExtension extends Extension
 
     private function registerMessengerConfiguration(array $config, ContainerBuilder $container, XmlFileLoader $loader)
     {
+        if (!interface_exists(MessageBusInterface::class)) {
+            throw new LogicException('Messenger support cannot be enabled as the Messenger component is not installed.');
+        }
+
         $loader->load('messenger.xml');
 
         $senderLocatorMapping = array();

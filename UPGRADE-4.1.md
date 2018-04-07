@@ -16,6 +16,8 @@ Console
  * Deprecated the `getHorizontalBorderChar()` method in favor of the `getBorderChars()` method in `TableStyle`.
  * Deprecated the `setVerticalBorderChar()` method in favor of the `setVerticalBorderChars()` method in `TableStyle`.
  * Deprecated the `getVerticalBorderChar()` method in favor of the `getBorderChars()` method in `TableStyle`.
+ * Added support for `iterable` messages in `write` and `writeln` methods of `Symfony\Component\Console\Output\OutputInterface`.
+   If you have a custom implementation of the interface, you should make sure it works with iterable as well.
 
 DependencyInjection
 -------------------
@@ -81,6 +83,7 @@ Security
    functionality, create a custom user-checker based on the
    `Symfony\Component\Security\Core\User\UserChecker`.
  * `AuthenticationUtils::getLastUsername()` now always returns a string.
+ * The `ExpressionVoter::addExpressionLanguageProvider()` method is deprecated. Register the provider directly on the injected ExpressionLanguage instance instead.
 
 SecurityBundle
 --------------
