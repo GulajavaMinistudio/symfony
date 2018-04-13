@@ -52,7 +52,7 @@
 
         <!-- Logging & Debug -->
         <service id="messenger.middleware.debug.logging" class="Symfony\Component\Messenger\Debug\LoggingMiddleware">
-            <argument type="service" id="logger" />
+            <argument type="service" id="logger" on-invalid="null" />
 
             <tag name="messenger.bus_middleware" priority="10" />
             <tag name="monolog.logger" channel="messenger" />
@@ -71,6 +71,19 @@
         <service id="messenger.sender_locator">
             <tag name="container.service_locator" />
             <argument type="collection" />
+        </service>
+
+        <!-- Adapters -->
+        <service id="messenger.adapter_factory" class="Symfony\Component\Messenger\Adapter\Factory\ChainAdapterFactory">
+            <argument type="tagged" tag="messenger.adapter_factory" />
+        </service>
+
+        <service id="messenger.adapter.amqp.factory" class="Symfony\Component\Messenger\Adapter\AmqpExt\AmqpAdapterFactory">
+            <argument type="service" id="messenger.transport.default_encoder" />
+            <argument type="service" id="messenger.transport.default_decoder" />
+            <argument>%kernel.debug%</argument>
+
+            <tag name="messenger.adapter_factory" />
         </service>
     </services>
 </container>
