@@ -53,13 +53,8 @@ class MessengerPass implements CompilerPassInterface
             $container->removeDefinition('messenger.middleware.debug.logging');
         }
 
-        if (!$container->has('serializer')) {
-            $container->removeDefinition('messenger.transport.serialize_message_with_type_in_headers');
-            $container->removeAlias('messenger.transport.default_encoder');
-            $container->removeAlias('messenger.transport.default_decoder');
-        }
-
         $this->registerReceivers($container);
+        $this->registerSenders($container);
         $this->registerHandlers($container);
     }
 
@@ -156,10 +151,30 @@ class MessengerPass implements CompilerPassInterface
         $receiverMapping = array();
         foreach ($container->findTaggedServiceIds('messenger.receiver') as $id => $tags) {
             foreach ($tags as $tag) {
-                $receiverMapping[$tag['id'] ?? $id] = new Reference($id);
+                $receiverMapping[$id] = new Reference($id);
+
+                if (isset($tag['name'])) {
+                    $receiverMapping[$tag['name']] = $receiverMapping[$id];
+                }
             }
         }
 
         $container->getDefinition('messenger.receiver_locator')->replaceArgument(0, $receiverMapping);
+    }
+
+    private function registerSenders(ContainerBuilder $container)
+    {
+        $senderLocatorMapping = array();
+        foreach ($container->findTaggedServiceIds('messenger.sender') as $id => $tags) {
+            foreach ($tags as $tag) {
+                $senderLocatorMapping[$id] = new Reference($id);
+
+                if (isset($tag['name'])) {
+                    $senderLocatorMapping[$tag['name']] = $senderLocatorMapping[$id];
+                }
+            }
+        }
+
+        $container->getDefinition('messenger.sender_locator')->replaceArgument(0, $senderLocatorMapping);
     }
 }

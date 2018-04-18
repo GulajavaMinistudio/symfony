@@ -273,7 +273,7 @@ class FrameworkExtension extends Extension
         }
 
         if ($this->isConfigEnabled($container, $config['messenger'])) {
-            $this->registerMessengerConfiguration($config['messenger'], $container, $loader);
+            $this->registerMessengerConfiguration($config['messenger'], $container, $loader, $config['serializer']);
         } else {
             $container->removeDefinition('console.command.messenger_consume_messages');
         }
@@ -1438,7 +1438,7 @@ class FrameworkExtension extends Extension
         }
     }
 
-    private function registerMessengerConfiguration(array $config, ContainerBuilder $container, XmlFileLoader $loader)
+    private function registerMessengerConfiguration(array $config, ContainerBuilder $container, XmlFileLoader $loader, array $serializerConfig)
     {
         if (!interface_exists(MessageBusInterface::class)) {
             throw new LogicException('Messenger support cannot be enabled as the Messenger component is not installed.');
@@ -1446,19 +1446,26 @@ class FrameworkExtension extends Extension
 
         $loader->load('messenger.xml');
 
-        $senderLocatorMapping = array();
-        $messageToSenderIdsMapping = array();
-        foreach ($config['routing'] as $message => $messageConfiguration) {
-            foreach ($messageConfiguration['senders'] as $sender) {
-                if (null !== $sender) {
-                    $senderLocatorMapping[$sender] = new Reference($sender);
-                }
+        if ($this->isConfigEnabled($container, $config['serializer'])) {
+            if (count($config['adapters']) > 0 && !$this->isConfigEnabled($container, $serializerConfig)) {
+                throw new LogicException('Using the default encoder/decoder, Symfony Messenger requires the Serializer. Enable it or install it by running "composer require symfony/serializer-pack".');
             }
 
+            $container->getDefinition('messenger.transport.serializer')
+                ->replaceArgument(1, $config['serializer']['format'])
+                ->replaceArgument(2, $config['serializer']['context']);
+        } else {
+            $container->removeDefinition('messenger.transport.serializer');
+        }
+
+        $container->setAlias('messenger.transport.encoder', $config['encoder']);
+        $container->setAlias('messenger.transport.decoder', $config['decoder']);
+
+        $messageToSenderIdsMapping = array();
+        foreach ($config['routing'] as $message => $messageConfiguration) {
             $messageToSenderIdsMapping[$message] = $messageConfiguration['senders'];
         }
 
-        $container->getDefinition('messenger.sender_locator')->replaceArgument(0, $senderLocatorMapping);
         $container->getDefinition('messenger.asynchronous.routing.sender_locator')->replaceArgument(1, $messageToSenderIdsMapping);
 
         if ($config['middlewares']['validation']['enabled']) {
@@ -1476,7 +1483,7 @@ class FrameworkExtension extends Extension
             ))->setArguments(array(
                 $adapter['dsn'],
                 $adapter['options'],
-            ))->addTag('messenger.sender'));
+            ))->addTag('messenger.sender', array('name' => $name)));
 
             $container->setDefinition('messenger.receiver.'.$name, (new Definition(ReceiverInterface::class))->setFactory(array(
                 new Reference('messenger.adapter_factory'),
@@ -1484,7 +1491,7 @@ class FrameworkExtension extends Extension
             ))->setArguments(array(
                 $adapter['dsn'],
                 $adapter['options'],
-            ))->addTag('messenger.receiver'));
+            ))->addTag('messenger.receiver', array('name' => $name)));
         }
     }
 

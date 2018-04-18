@@ -545,8 +545,10 @@ abstract class FrameworkExtensionTest extends TestCase
         $container = $this->createContainerFromFile('messenger_adapter');
         $this->assertTrue($container->hasDefinition('messenger.sender.default'));
         $this->assertTrue($container->getDefinition('messenger.sender.default')->hasTag('messenger.sender'));
+        $this->assertEquals(array(array('name' => 'default')), $container->getDefinition('messenger.sender.default')->getTag('messenger.sender'));
         $this->assertTrue($container->hasDefinition('messenger.receiver.default'));
         $this->assertTrue($container->getDefinition('messenger.receiver.default')->hasTag('messenger.receiver'));
+        $this->assertEquals(array(array('name' => 'default')), $container->getDefinition('messenger.receiver.default')->getTag('messenger.receiver'));
 
         $this->assertTrue($container->hasDefinition('messenger.sender.customised'));
         $senderFactory = $container->getDefinition('messenger.sender.customised')->getFactory();
@@ -554,8 +556,8 @@ abstract class FrameworkExtensionTest extends TestCase
 
         $this->assertEquals(array(new Reference('messenger.adapter_factory'), 'createSender'), $senderFactory);
         $this->assertCount(2, $senderArguments);
-        $this->assertEquals('amqp://localhost/%2f/messages?exchange_name=exchange_name', $senderArguments[0]);
-        $this->assertEquals(array('queue_name' => 'Queue'), $senderArguments[1]);
+        $this->assertSame('amqp://localhost/%2f/messages?exchange_name=exchange_name', $senderArguments[0]);
+        $this->assertSame(array('queue' => array('name' => 'Queue')), $senderArguments[1]);
 
         $this->assertTrue($container->hasDefinition('messenger.receiver.customised'));
         $receiverFactory = $container->getDefinition('messenger.receiver.customised')->getFactory();
@@ -563,8 +565,29 @@ abstract class FrameworkExtensionTest extends TestCase
 
         $this->assertEquals(array(new Reference('messenger.adapter_factory'), 'createReceiver'), $receiverFactory);
         $this->assertCount(2, $receiverArguments);
-        $this->assertEquals('amqp://localhost/%2f/messages?exchange_name=exchange_name', $receiverArguments[0]);
-        $this->assertEquals(array('queue_name' => 'Queue'), $receiverArguments[1]);
+        $this->assertSame('amqp://localhost/%2f/messages?exchange_name=exchange_name', $receiverArguments[0]);
+        $this->assertSame(array('queue' => array('name' => 'Queue')), $receiverArguments[1]);
+    }
+
+    /**
+     * @expectedException \Symfony\Component\DependencyInjection\Exception\LogicException
+     * @expectedExceptionMessage Using the default encoder/decoder, Symfony Messenger requires the Serializer. Enable it or install it by running "composer require symfony/serializer-pack".
+     */
+    public function testMessengerTransportConfigurationWithoutSerializer()
+    {
+        $this->createContainerFromFile('messenger_transport_no_serializer');
+    }
+
+    public function testMessengerTransportConfiguration()
+    {
+        $container = $this->createContainerFromFile('messenger_transport');
+
+        $this->assertSame('messenger.transport.serializer', (string) $container->getAlias('messenger.transport.encoder'));
+        $this->assertSame('messenger.transport.serializer', (string) $container->getAlias('messenger.transport.decoder'));
+
+        $serializerTransportDefinition = $container->getDefinition('messenger.transport.serializer');
+        $this->assertSame('csv', $serializerTransportDefinition->getArgument(1));
+        $this->assertSame(array('enable_max_depth' => true), $serializerTransportDefinition->getArgument(2));
     }
 
     public function testTranslator()
