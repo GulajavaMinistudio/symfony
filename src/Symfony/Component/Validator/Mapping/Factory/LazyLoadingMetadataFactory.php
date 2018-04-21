@@ -124,7 +124,7 @@ class LazyLoadingMetadataFactory implements MetadataFactoryInterface
 
         $interfaces = $metadata->getReflectionClass()->getInterfaces();
 
-        $interfaces = array_filter($interfaces, function ($interface) use ($parent, $interfaces) {
+        $interfaces = array_filter($interfaces, function (\ReflectionClass $interface) use ($parent, $interfaces) {
             $interfaceName = $interface->getName();
 
             if ($parent && $parent->implementsInterface($interfaceName)) {
@@ -160,10 +160,6 @@ class LazyLoadingMetadataFactory implements MetadataFactoryInterface
 
         $class = ltrim(is_object($value) ? get_class($value) : $value, '\\');
 
-        if (class_exists($class) || interface_exists($class)) {
-            return true;
-        }
-
-        return false;
+        return class_exists($class) || interface_exists($class, false);
     }
 }
