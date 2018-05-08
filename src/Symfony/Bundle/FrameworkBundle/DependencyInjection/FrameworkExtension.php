@@ -109,11 +109,6 @@ class FrameworkExtension extends Extension
     private $validatorConfigEnabled = false;
 
     /**
-     * @var string|null
-     */
-    private $kernelRootHash;
-
-    /**
      * Responds to the app.config configuration parameter.
      *
      * @throws LogicException
@@ -1449,8 +1444,8 @@ class FrameworkExtension extends Extension
         $loader->load('messenger.xml');
 
         if ($this->isConfigEnabled($container, $config['serializer'])) {
-            if (\count($config['transports']) > 0 && !$this->isConfigEnabled($container, $serializerConfig)) {
-                throw new LogicException('Using the default encoder/decoder, Symfony Messenger requires the Serializer. Enable it or install it by running "composer require symfony/serializer-pack".');
+            if (!$this->isConfigEnabled($container, $serializerConfig)) {
+                throw new LogicException('The default Messenger serializer cannot be enabled as the Serializer support is not available. Try enable it or install it by running "composer require symfony/serializer-pack".');
             }
 
             $container->getDefinition('messenger.transport.serializer')
@@ -1458,6 +1453,9 @@ class FrameworkExtension extends Extension
                 ->replaceArgument(2, $config['serializer']['context']);
         } else {
             $container->removeDefinition('messenger.transport.serializer');
+            if ('messenger.transport.serializer' === $config['encoder'] || 'messenger.transport.serializer' === $config['decoder']) {
+                $container->removeDefinition('messenger.transport.amqp.factory');
+            }
         }
 
         $container->setAlias('messenger.transport.encoder', $config['encoder']);
@@ -1468,23 +1466,21 @@ class FrameworkExtension extends Extension
                 throw new LogicException(sprintf('You need to define a default bus with the "default_bus" configuration. Possible values: %s', implode(', ', array_keys($config['buses']))));
             }
 
-            $config['default_bus'] = array_keys($config['buses'])[0];
+            $config['default_bus'] = key($config['buses']);
         }
 
-        $defaultMiddlewares = array('before' => array('logging'), 'after' => array('route_messages', 'call_message_handler'));
-        foreach ($config['buses'] as $name => $bus) {
-            $busId = 'messenger.bus.'.$name;
+        $defaultMiddleware = array('before' => array('logging'), 'after' => array('route_messages', 'call_message_handler'));
+        foreach ($config['buses'] as $busId => $bus) {
+            $middleware = $bus['default_middleware'] ? array_merge($defaultMiddleware['before'], $bus['middleware'], $defaultMiddleware['after']) : $bus['middleware'];
 
-            $middlewares = $bus['default_middlewares'] ? array_merge($defaultMiddlewares['before'], $bus['middlewares'], $defaultMiddlewares['after']) : $bus['middlewares'];
-
-            if (!$validationConfig['enabled'] && \in_array('messenger.middleware.validation', $middlewares, true)) {
+            if (!$validationConfig['enabled'] && \in_array('messenger.middleware.validation', $middleware, true)) {
                 throw new LogicException('The Validation middleware is only available when the Validator component is installed and enabled. Try running "composer require symfony/validator".');
             }
 
-            $container->setParameter($busId.'.middlewares', $middlewares);
-            $container->setDefinition($busId, (new Definition(MessageBus::class, array(array())))->addTag('messenger.bus', array('name' => $name)));
+            $container->setParameter($busId.'.middleware', $middleware);
+            $container->setDefinition($busId, (new Definition(MessageBus::class, array(array())))->addTag('messenger.bus'));
 
-            if ($name === $config['default_bus']) {
+            if ($busId === $config['default_bus']) {
                 $container->setAlias('message_bus', $busId);
                 $container->setAlias(MessageBusInterface::class, $busId);
             }
@@ -1506,6 +1502,10 @@ class FrameworkExtension extends Extension
         $container->getDefinition('messenger.asynchronous.routing.sender_locator')->replaceArgument(1, $messageToSenderIdsMapping);
 
         foreach ($config['transports'] as $name => $transport) {
+            if (0 === strpos($transport['dsn'], 'amqp://') && !$container->hasDefinition('messenger.transport.amqp.factory')) {
+                throw new LogicException('The default AMQP transport is not available. Make sure you have installed and enabled the Serializer component. Try enable it or install it by running "composer require symfony/serializer-pack".');
+            }
+
             $senderDefinition = (new Definition(SenderInterface::class))
                 ->setFactory(array(new Reference('messenger.transport_factory'), 'createSender'))
                 ->setArguments(array($transport['dsn'], $transport['options']))
@@ -1570,20 +1570,6 @@ class FrameworkExtension extends Extension
                 $propertyAccessDefinition->setArguments(array(0, false));
             }
         }
-    }
-
-    /**
-     * Gets a hash of the kernel root directory.
-     *
-     * @return string
-     */
-    private function getKernelRootHash(ContainerBuilder $container)
-    {
-        if (!$this->kernelRootHash) {
-            $this->kernelRootHash = hash('sha256', $container->getParameter('kernel.root_dir'));
-        }
-
-        return $this->kernelRootHash;
     }
 
     /**

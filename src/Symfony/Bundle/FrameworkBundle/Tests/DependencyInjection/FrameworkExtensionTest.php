@@ -526,7 +526,8 @@ abstract class FrameworkExtensionTest extends TestCase
     public function testMessenger()
     {
         $container = $this->createContainerFromFile('messenger');
-        $this->assertTrue($container->has('message_bus'));
+        $this->assertTrue($container->hasAlias('message_bus'));
+        $this->assertFalse($container->hasDefinition('messenger.transport.amqp.factory'));
     }
 
     public function testMessengerTransports()
@@ -556,6 +557,8 @@ abstract class FrameworkExtensionTest extends TestCase
         $this->assertCount(2, $receiverArguments);
         $this->assertSame('amqp://localhost/%2f/messages?exchange_name=exchange_name', $receiverArguments[0]);
         $this->assertSame(array('queue' => array('name' => 'Queue')), $receiverArguments[1]);
+
+        $this->assertTrue($container->hasDefinition('messenger.transport.amqp.factory'));
     }
 
     public function testMessengerRouting()
@@ -574,11 +577,20 @@ abstract class FrameworkExtensionTest extends TestCase
 
     /**
      * @expectedException \Symfony\Component\DependencyInjection\Exception\LogicException
-     * @expectedExceptionMessage Using the default encoder/decoder, Symfony Messenger requires the Serializer. Enable it or install it by running "composer require symfony/serializer-pack".
+     * @expectedExceptionMessage The default Messenger serializer cannot be enabled as the Serializer support is not available. Try enable it or install it by running "composer require symfony/serializer-pack".
      */
     public function testMessengerTransportConfigurationWithoutSerializer()
     {
         $this->createContainerFromFile('messenger_transport_no_serializer');
+    }
+
+    /**
+     * @expectedException \Symfony\Component\DependencyInjection\Exception\LogicException
+     * @expectedExceptionMessage The default AMQP transport is not available. Make sure you have installed and enabled the Serializer component. Try enable it or install it by running "composer require symfony/serializer-pack".
+     */
+    public function testMessengerAMQPTransportConfigurationWithoutSerializer()
+    {
+        $this->createContainerFromFile('messenger_amqp_transport_no_serializer');
     }
 
     public function testMessengerTransportConfiguration()
@@ -599,13 +611,13 @@ abstract class FrameworkExtensionTest extends TestCase
 
         $this->assertTrue($container->has('messenger.bus.commands'));
         $this->assertSame(array(), $container->getDefinition('messenger.bus.commands')->getArgument(0));
-        $this->assertEquals(array('logging', 'route_messages', 'call_message_handler'), $container->getParameter('messenger.bus.commands.middlewares'));
+        $this->assertEquals(array('logging', 'route_messages', 'call_message_handler'), $container->getParameter('messenger.bus.commands.middleware'));
         $this->assertTrue($container->has('messenger.bus.events'));
         $this->assertSame(array(), $container->getDefinition('messenger.bus.events')->getArgument(0));
-        $this->assertEquals(array('logging', 'tolerate_no_handler', 'route_messages', 'call_message_handler'), $container->getParameter('messenger.bus.events.middlewares'));
+        $this->assertEquals(array('logging', 'allow_no_handler', 'route_messages', 'call_message_handler'), $container->getParameter('messenger.bus.events.middleware'));
         $this->assertTrue($container->has('messenger.bus.queries'));
         $this->assertSame(array(), $container->getDefinition('messenger.bus.queries')->getArgument(0));
-        $this->assertEquals(array('route_messages', 'tolerate_no_handler', 'call_message_handler'), $container->getParameter('messenger.bus.queries.middlewares'));
+        $this->assertEquals(array('route_messages', 'allow_no_handler', 'call_message_handler'), $container->getParameter('messenger.bus.queries.middleware'));
 
         $this->assertTrue($container->hasAlias('message_bus'));
         $this->assertSame('messenger.bus.commands', (string) $container->getAlias('message_bus'));

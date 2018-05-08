@@ -2,19 +2,19 @@
 
 $container->loadFromExtension('framework', array(
     'messenger' => array(
-        'default_bus' => 'commands',
+        'default_bus' => 'messenger.bus.commands',
         'buses' => array(
-            'commands' => null,
-            'events' => array(
-                'middlewares' => array(
-                    'tolerate_no_handler',
+            'messenger.bus.commands' => null,
+            'messenger.bus.events' => array(
+                'middleware' => array(
+                    'allow_no_handler',
                 ),
             ),
-            'queries' => array(
-                'default_middlewares' => false,
-                'middlewares' => array(
+            'messenger.bus.queries' => array(
+                'default_middleware' => false,
+                'middleware' => array(
                     'route_messages',
-                    'tolerate_no_handler',
+                    'allow_no_handler',
                     'call_message_handler',
                 ),
             ),

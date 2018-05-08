@@ -247,33 +247,30 @@ class MessengerPassTest extends TestCase
 
         $container = $this->getContainerBuilder();
         $container->register('messenger.data_collector', $dataCollector);
-        $container->register($fooBusId = 'messenger.bus.foo', MessageBusInterface::class)->addTag('messenger.bus', array('name' => 'foo'));
-        $container->register($barBusId = 'messenger.bus.bar', MessageBusInterface::class)->addTag('messenger.bus');
+        $container->register($fooBusId = 'messenger.bus.foo', MessageBusInterface::class)->addTag('messenger.bus');
         $container->setParameter('kernel.debug', true);
 
         (new MessengerPass())->process($container);
 
         $this->assertTrue($container->hasDefinition($debuggedFooBusId = 'debug.traced.'.$fooBusId));
         $this->assertSame(array($fooBusId, null, 0), $container->getDefinition($debuggedFooBusId)->getDecoratedService());
-        $this->assertTrue($container->hasDefinition($debuggedBarBusId = 'debug.traced.'.$barBusId));
-        $this->assertSame(array($barBusId, null, 0), $container->getDefinition($debuggedBarBusId)->getDecoratedService());
-        $this->assertEquals(array(array('registerBus', array('foo', new Reference($debuggedFooBusId))), array('registerBus', array('messenger.bus.bar', new Reference($debuggedBarBusId)))), $container->getDefinition('messenger.data_collector')->getMethodCalls());
+        $this->assertEquals(array(array('registerBus', array($fooBusId, new Reference($debuggedFooBusId)))), $container->getDefinition('messenger.data_collector')->getMethodCalls());
     }
 
-    public function testRegistersMiddlewaresFromServices()
+    public function testRegistersMiddlewareFromServices()
     {
         $container = $this->getContainerBuilder();
-        $container->register($fooBusId = 'messenger.bus.foo', MessageBusInterface::class)->setArgument(0, array())->addTag('messenger.bus', array('name' => 'foo'));
+        $container->register($fooBusId = 'messenger.bus.foo', MessageBusInterface::class)->setArgument(0, array())->addTag('messenger.bus');
         $container->register('messenger.middleware.allow_no_handler', AllowNoHandlerMiddleware::class)->setAbstract(true);
         $container->register(UselessMiddleware::class, UselessMiddleware::class);
 
-        $container->setParameter($middlewaresParameter = $fooBusId.'.middlewares', array(UselessMiddleware::class, 'allow_no_handler'));
+        $container->setParameter($middlewareParameter = $fooBusId.'.middleware', array(UselessMiddleware::class, 'allow_no_handler'));
 
         (new MessengerPass())->process($container);
 
         $this->assertTrue($container->hasDefinition($childMiddlewareId = $fooBusId.'.middleware.allow_no_handler'));
         $this->assertEquals(array(new Reference(UselessMiddleware::class), new Reference($childMiddlewareId)), $container->getDefinition($fooBusId)->getArgument(0));
-        $this->assertFalse($container->hasParameter($middlewaresParameter));
+        $this->assertFalse($container->hasParameter($middlewareParameter));
     }
 
     /**
@@ -283,8 +280,8 @@ class MessengerPassTest extends TestCase
     public function testCannotRegistersAnUndefinedMiddleware()
     {
         $container = $this->getContainerBuilder();
-        $container->register($fooBusId = 'messenger.bus.foo', MessageBusInterface::class)->setArgument(0, array())->addTag('messenger.bus', array('name' => 'foo'));
-        $container->setParameter($middlewaresParameter = $fooBusId.'.middlewares', array('not_defined_middleware'));
+        $container->register($fooBusId = 'messenger.bus.foo', MessageBusInterface::class)->setArgument(0, array())->addTag('messenger.bus');
+        $container->setParameter($middlewareParameter = $fooBusId.'.middleware', array('not_defined_middleware'));
 
         (new MessengerPass())->process($container);
     }
