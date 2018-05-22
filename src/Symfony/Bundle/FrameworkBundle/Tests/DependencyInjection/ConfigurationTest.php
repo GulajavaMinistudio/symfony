@@ -46,6 +46,41 @@ class ConfigurationTest extends TestCase
         $this->assertEquals(array('FrameworkBundle:Form'), $config['templating']['form']['resources']);
     }
 
+    public function getTestValidSessionName()
+    {
+        return array(
+            array(null),
+            array('PHPSESSID'),
+            array('a&b'),
+            array(',_-!@#$%^*(){}:<>/?'),
+        );
+    }
+
+    /**
+     * @dataProvider getTestInvalidSessionName
+     * @expectedException \Symfony\Component\Config\Definition\Exception\InvalidConfigurationException
+     */
+    public function testInvalidSessionName($sessionName)
+    {
+        $processor = new Processor();
+        $processor->processConfiguration(
+            new Configuration(true),
+            array(array('session' => array('name' => $sessionName)))
+        );
+    }
+
+    public function getTestInvalidSessionName()
+    {
+        return array(
+            array('a.b'),
+            array('a['),
+            array('a[]'),
+            array('a[b]'),
+            array('a=b'),
+            array('a+b'),
+        );
+    }
+
     public function testAssetsCanBeEnabled()
     {
         $processor = new Processor();
