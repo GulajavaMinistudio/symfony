@@ -43,7 +43,6 @@ class PhpArrayAdapter implements AdapterInterface, CacheInterface, PruneableInte
     {
         $this->file = $file;
         $this->pool = $fallbackPool;
-        $this->zendDetectUnicode = ini_get('zend.detect_unicode');
         $this->createCacheItem = \Closure::bind(
             function ($key, $value, $isHit) {
                 $item = new CacheItem();
@@ -83,17 +82,17 @@ class PhpArrayAdapter implements AdapterInterface, CacheInterface, PruneableInte
     /**
      * {@inheritdoc}
      */
-    public function get(string $key, callable $callback)
+    public function get(string $key, callable $callback, float $beta = null)
     {
         if (null === $this->values) {
             $this->initialize();
         }
         if (null === $value = $this->values[$key] ?? null) {
             if ($this->pool instanceof CacheInterface) {
-                return $this->pool->get($key, $callback);
+                return $this->pool->get($key, $callback, $beta);
             }
 
-            return $this->doGet($this->pool, $key, $callback);
+            return $this->doGet($this->pool, $key, $callback, $beta ?? 1.0);
         }
         if ('N;' === $value) {
             return null;
