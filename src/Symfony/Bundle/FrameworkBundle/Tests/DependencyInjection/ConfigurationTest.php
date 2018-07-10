@@ -226,6 +226,7 @@ class ConfigurationTest extends TestCase
                 'http_port' => 80,
                 'https_port' => 443,
                 'strict_requirements' => true,
+                'utf8' => false,
             ),
             'session' => array(
                 'enabled' => false,
@@ -266,6 +267,7 @@ class ConfigurationTest extends TestCase
                 'directory' => '%kernel.cache_dir%/pools',
                 'default_redis_provider' => 'redis://localhost',
                 'default_memcached_provider' => 'memcached://localhost',
+                'default_pdo_provider' => 'doctrine.dbal.default_connection',
             ),
             'workflows' => array(
                 'enabled' => false,

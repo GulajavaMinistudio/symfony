@@ -24,6 +24,7 @@ use Symfony\Component\Cache\Adapter\AbstractAdapter;
 use Symfony\Component\Cache\Adapter\AdapterInterface;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
 use Symfony\Component\Cache\Adapter\TagAwareAdapter;
+use Symfony\Component\Cache\Marshaller\DefaultMarshaller;
 use Symfony\Component\Cache\ResettableInterface;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\Config\Loader\LoaderInterface;
@@ -687,6 +688,9 @@ class FrameworkExtension extends Extension
 
         $loader->load('routing.xml');
 
+        if ($config['utf8']) {
+            $container->getDefinition('routing.loader')->replaceArgument(2, array('utf8' => true));
+        }
         if (!interface_exists(ContainerBagInterface::class)) {
             $container->getDefinition('router.default')
                 ->replaceArgument(0, new Reference('service_container'))
@@ -1539,6 +1543,10 @@ class FrameworkExtension extends Extension
 
     private function registerCacheConfiguration(array $config, ContainerBuilder $container)
     {
+        if (!class_exists(DefaultMarshaller::class)) {
+            $container->removeDefinition('cache.default_marshaller');
+        }
+
         $version = new Parameter('container.build_id');
         $container->getDefinition('cache.adapter.apcu')->replaceArgument(2, $version);
         $container->getDefinition('cache.adapter.filesystem')->replaceArgument(2, $config['directory']);
@@ -1550,7 +1558,7 @@ class FrameworkExtension extends Extension
             // Inline any env vars referenced in the parameter
             $container->setParameter('cache.prefix.seed', $container->resolveEnvPlaceholders($container->getParameter('cache.prefix.seed'), true));
         }
-        foreach (array('doctrine', 'psr6', 'redis', 'memcached') as $name) {
+        foreach (array('doctrine', 'psr6', 'redis', 'memcached', 'pdo') as $name) {
             if (isset($config[$name = 'default_'.$name.'_provider'])) {
                 $container->setAlias('cache.'.$name, new Alias(Compiler\CachePoolPass::getServiceProvider($container, $config[$name]), false));
             }

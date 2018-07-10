@@ -11,6 +11,25 @@ Config
 
  * Deprecated constructing a `TreeBuilder` without passing root node information.
 
+Console
+-------
+
+ * Deprecated passing a command as a string to `ProcessHelper::run()`,
+   pass the command as an array of arguments instead.
+
+   Before:
+   ```php
+   $processHelper->run($output, 'ls -l');
+   ```
+
+   After:
+   ```php
+   $processHelper->run($output, array('ls', '-l'));
+
+   // alternatively, when a shell wrapper is required
+   $processHelper->run($output, Process::fromShellCommandline('ls -l'));
+   ```
+
 DoctrineBridge
 --------------
 
@@ -36,6 +55,33 @@ Form
       {{ form_widget(field) }}
    {% endfor %}
    ```
+
+Process
+-------
+
+ * Deprecated the `Process::setCommandline()` and the `PhpProcess::setPhpBinary()` methods.
+ * Deprecated passing commands as strings when creating a `Process` instance.
+
+   Before:
+   ```php
+   $process = new Process('ls -l');
+   ```
+
+   After:
+   ```php
+   $process = new Process(array('ls', '-l'));
+
+   // alternatively, when a shell wrapper is required
+   $process = Process::fromShellCommandline('ls -l');
+   ```
+
+FrameworkBundle
+---------------
+
+ * The `framework.router.utf8` configuration option has been added. If your app's charset
+   is UTF-8 (see kernel's `getCharset()` method), it is recommended to set it to `true`:
+   this will generate 404s for non-UTF-8 URLs, which are incompatible with you app anyway,
+   and will allow dumping optimized routers and using Unicode classes in requirements.
 
 Security
 --------
