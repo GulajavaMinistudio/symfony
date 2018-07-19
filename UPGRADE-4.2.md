@@ -83,6 +83,11 @@ FrameworkBundle
    this will generate 404s for non-UTF-8 URLs, which are incompatible with you app anyway,
    and will allow dumping optimized routers and using Unicode classes in requirements.
 
+Messenger
+---------
+
+ * The `handle` method of the `Symfony\Component\Messenger\Middleware\ValidationMiddleware` and `Symfony\Component\Messenger\Asynchronous\Middleware\SendMessageMiddleware` middlewares now requires an `Envelope` object to be given (because they implement the `EnvelopeAwareInterface`). When using these middleware with the provided `MessageBus`, you will not have to do anything. If you use the middlewares any other way, you can use `Envelope::wrap($message)` to create an envelope for your message.
+
 Security
 --------
 
@@ -94,6 +99,7 @@ Security
    custom anonymous and remember me token classes is deprecated. To
    use custom tokens, extend the existing `Symfony\Component\Security\Core\Authentication\Token\AnonymousToken`
    or `Symfony\Component\Security\Core\Authentication\Token\RememberMeToken`.
+ * Accessing the user object that is not an instance of `UserInterface` from `Security::getUser()` is deprecated.
 
 SecurityBundle
 --------------
