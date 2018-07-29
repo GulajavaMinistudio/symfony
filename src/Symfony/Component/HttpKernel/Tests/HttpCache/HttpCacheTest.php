@@ -11,10 +11,10 @@
 
 namespace Symfony\Component\HttpKernel\Tests\HttpCache;
 
-use Symfony\Component\HttpKernel\HttpCache\Esi;
-use Symfony\Component\HttpKernel\HttpCache\HttpCache;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\HttpCache\Esi;
+use Symfony\Component\HttpKernel\HttpCache\HttpCache;
 use Symfony\Component\HttpKernel\HttpCache\Store;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
 
@@ -215,7 +215,7 @@ class HttpCacheTest extends HttpCacheTestCase
             if ($request->cookies->has('authenticated')) {
                 $response->headers->set('Cache-Control', 'private, no-store');
                 $response->setETag('"private tag"');
-                if (in_array('"private tag"', $etags)) {
+                if (\in_array('"private tag"', $etags)) {
                     $response->setStatusCode(304);
                 } else {
                     $response->setStatusCode(200);
@@ -225,7 +225,7 @@ class HttpCacheTest extends HttpCacheTestCase
             } else {
                 $response->headers->set('Cache-Control', 'public');
                 $response->setETag('"public tag"');
-                if (in_array('"public tag"', $etags)) {
+                if (\in_array('"public tag"', $etags)) {
                     $response->setStatusCode(304);
                 } else {
                     $response->setStatusCode(200);
@@ -566,7 +566,7 @@ class HttpCacheTest extends HttpCacheTestCase
 
     public function testDegradationWhenCacheLocked()
     {
-        if ('\\' === DIRECTORY_SEPARATOR) {
+        if ('\\' === \DIRECTORY_SEPARATOR) {
             $this->markTestSkipped('Skips on windows to avoid permissions issues.');
         }
 
@@ -994,7 +994,7 @@ class HttpCacheTest extends HttpCacheTestCase
         $this->assertHttpKernelIsNotCalled();
         $this->assertEquals(200, $this->response->getStatusCode());
         $this->assertEquals('', $this->response->getContent());
-        $this->assertEquals(strlen('Hello World'), $this->response->headers->get('Content-Length'));
+        $this->assertEquals(\strlen('Hello World'), $this->response->headers->get('Content-Length'));
     }
 
     public function testSendsNoContentWhenFresh()

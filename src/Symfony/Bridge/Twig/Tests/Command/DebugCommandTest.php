@@ -15,8 +15,8 @@ use PHPUnit\Framework\TestCase;
 use Symfony\Bridge\Twig\Command\DebugCommand;
 use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Tester\CommandTester;
-use Twig\Loader\FilesystemLoader;
 use Twig\Environment;
+use Twig\Loader\FilesystemLoader;
 
 class DebugCommandTest extends TestCase
 {
@@ -39,7 +39,7 @@ class DebugCommandTest extends TestCase
             FilesystemLoader::MAIN_NAMESPACE => array('extractor', 'extractor'),
         ));
         $ret = $tester->execute(array(), array('decorated' => false));
-        $ds = DIRECTORY_SEPARATOR;
+        $ds = \DIRECTORY_SEPARATOR;
         $loaderPaths = <<<TXT
 Loader Paths
 ------------
@@ -64,7 +64,7 @@ TXT;
 
     private function createCommandTester(array $paths = array())
     {
-        $filesystemLoader = new FilesystemLoader(array(), dirname(__DIR__).'/Fixtures');
+        $filesystemLoader = new FilesystemLoader(array(), \dirname(__DIR__).'/Fixtures');
         foreach ($paths as $namespace => $relDirs) {
             foreach ($relDirs as $relDir) {
                 $filesystemLoader->addPath($relDir, $namespace);

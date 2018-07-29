@@ -11,8 +11,8 @@
 
 namespace Symfony\Bundle\FrameworkBundle\DependencyInjection;
 
-use Doctrine\Common\Annotations\Reader;
 use Doctrine\Common\Annotations\AnnotationRegistry;
+use Doctrine\Common\Annotations\Reader;
 use Symfony\Bridge\Monolog\Processor\DebugProcessor;
 use Symfony\Bridge\Monolog\Processor\ProcessorInterface;
 use Symfony\Bridge\Twig\Extension\CsrfExtension;
@@ -83,8 +83,8 @@ use Symfony\Component\Serializer\Encoder\DecoderInterface;
 use Symfony\Component\Serializer\Encoder\EncoderInterface;
 use Symfony\Component\Serializer\Mapping\ClassDiscriminatorFromClassMetadata;
 use Symfony\Component\Serializer\Mapping\Factory\CacheClassMetadataFactory;
-use Symfony\Component\Serializer\Normalizer\DateIntervalNormalizer;
 use Symfony\Component\Serializer\Normalizer\ConstraintViolationListNormalizer;
+use Symfony\Component\Serializer\Normalizer\DateIntervalNormalizer;
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 use Symfony\Component\Stopwatch\Stopwatch;
@@ -121,7 +121,7 @@ class FrameworkExtension extends Extension
      */
     public function load(array $configs, ContainerBuilder $container)
     {
-        $loader = new XmlFileLoader($container, new FileLocator(dirname(__DIR__).'/Resources/config'));
+        $loader = new XmlFileLoader($container, new FileLocator(\dirname(__DIR__).'/Resources/config'));
 
         $loader->load('web.xml');
         $loader->load('services.xml');
@@ -805,7 +805,7 @@ class FrameworkExtension extends Extension
             $loaders = array_map(function ($loader) { return new Reference($loader); }, $config['loaders']);
 
             // Use a delegation unless only a single loader was registered
-            if (1 === count($loaders)) {
+            if (1 === \count($loaders)) {
                 $container->setAlias('templating.loader', (string) reset($loaders))->setPrivate(true);
             } else {
                 $container->getDefinition('templating.loader.chain')->addArgument($loaders);
@@ -827,7 +827,7 @@ class FrameworkExtension extends Extension
         $engines = array_map(function ($engine) { return new Reference('templating.engine.'.$engine); }, $config['engines']);
 
         // Use a delegation unless only a single engine was registered
-        if (1 === count($engines)) {
+        if (1 === \count($engines)) {
             $container->setAlias('templating', (string) reset($engines))->setPublic(true);
         } else {
             $templateEngineDefinition = $container->getDefinition('templating.engine.delegating');
@@ -843,7 +843,7 @@ class FrameworkExtension extends Extension
         ;
 
         // configure the PHP engine if needed
-        if (in_array('php', $config['engines'], true)) {
+        if (\in_array('php', $config['engines'], true)) {
             $loader->load('templating_php.xml');
 
             $container->setParameter('templating.helper.form.resources', $config['form']['resources']);
@@ -975,17 +975,17 @@ class FrameworkExtension extends Extension
         if (class_exists('Symfony\Component\Validator\Validation')) {
             $r = new \ReflectionClass('Symfony\Component\Validator\Validation');
 
-            $dirs[] = dirname($r->getFileName()).'/Resources/translations';
+            $dirs[] = \dirname($r->getFileName()).'/Resources/translations';
         }
         if (class_exists('Symfony\Component\Form\Form')) {
             $r = new \ReflectionClass('Symfony\Component\Form\Form');
 
-            $dirs[] = dirname($r->getFileName()).'/Resources/translations';
+            $dirs[] = \dirname($r->getFileName()).'/Resources/translations';
         }
         if (class_exists('Symfony\Component\Security\Core\Exception\AuthenticationException')) {
             $r = new \ReflectionClass('Symfony\Component\Security\Core\Exception\AuthenticationException');
 
-            $dirs[] = dirname(dirname($r->getFileName())).'/Resources/translations';
+            $dirs[] = \dirname(\dirname($r->getFileName())).'/Resources/translations';
         }
         $defaultDir = $container->getParameterBag()->resolveValue($config['default_path']);
         $rootDir = $container->getParameter('kernel.root_dir');
@@ -1105,7 +1105,7 @@ class FrameworkExtension extends Extension
 
         if (interface_exists('Symfony\Component\Form\FormInterface')) {
             $reflClass = new \ReflectionClass('Symfony\Component\Form\FormInterface');
-            $fileRecorder('xml', dirname($reflClass->getFileName()).'/Resources/config/validation.xml');
+            $fileRecorder('xml', \dirname($reflClass->getFileName()).'/Resources/config/validation.xml');
         }
 
         foreach ($container->getParameter('kernel.bundles_metadata') as $bundle) {
@@ -1300,7 +1300,7 @@ class FrameworkExtension extends Extension
         }
 
         $fileRecorder = function ($extension, $path) use (&$serializerLoaders) {
-            $definition = new Definition(in_array($extension, array('yaml', 'yml')) ? 'Symfony\Component\Serializer\Mapping\Loader\YamlFileLoader' : 'Symfony\Component\Serializer\Mapping\Loader\XmlFileLoader', array($path));
+            $definition = new Definition(\in_array($extension, array('yaml', 'yml')) ? 'Symfony\Component\Serializer\Mapping\Loader\YamlFileLoader' : 'Symfony\Component\Serializer\Mapping\Loader\XmlFileLoader', array($path));
             $definition->setPublic(false);
             $serializerLoaders[] = $definition;
         };
@@ -1378,7 +1378,7 @@ class FrameworkExtension extends Extension
         $loader->load('lock.xml');
 
         foreach ($config['resources'] as $resourceName => $resourceStores) {
-            if (0 === count($resourceStores)) {
+            if (0 === \count($resourceStores)) {
                 continue;
             }
 
@@ -1419,7 +1419,7 @@ class FrameworkExtension extends Extension
             }
 
             // Wrap array of stores with CombinedStore
-            if (count($storeDefinitions) > 1) {
+            if (\count($storeDefinitions) > 1) {
                 $combinedDefinition = new ChildDefinition('lock.store.combined.abstract');
                 $combinedDefinition->replaceArgument(0, $storeDefinitions);
                 $container->setDefinition('lock.'.$resourceName.'.store', $combinedDefinition);
@@ -1511,6 +1511,22 @@ class FrameworkExtension extends Extension
             throw new LogicException(sprintf('The default bus named "%s" is not defined. Define it or change the default bus name.', $config['default_bus']));
         }
 
+        $senderAliases = array();
+        foreach ($config['transports'] as $name => $transport) {
+            if (0 === strpos($transport['dsn'], 'amqp://') && !$container->hasDefinition('messenger.transport.amqp.factory')) {
+                throw new LogicException('The default AMQP transport is not available. Make sure you have installed and enabled the Serializer component. Try enable it or install it by running "composer require symfony/serializer-pack".');
+            }
+
+            $transportDefinition = (new Definition(TransportInterface::class))
+                ->setFactory(array(new Reference('messenger.transport_factory'), 'createTransport'))
+                ->setArguments(array($transport['dsn'], $transport['options']))
+                ->addTag('messenger.receiver', array('alias' => $name))
+                ->addTag('messenger.sender', array('alias' => $name))
+            ;
+            $container->setDefinition($transportId = 'messenger.transport.'.$name, $transportDefinition);
+            $senderAliases[$name] = $transportId;
+        }
+
         $messageToSenderIdMapping = array();
         $messageToSendAndHandleMapping = array();
         foreach ($config['routing'] as $message => $messageConfiguration) {
@@ -1519,8 +1535,11 @@ class FrameworkExtension extends Extension
             }
 
             if (1 < \count($messageConfiguration['senders'])) {
-                $senders = array_map(function ($sender) { return new Reference($sender); }, $messageConfiguration['senders']);
+                $senders = array_map(function ($sender) use ($senderAliases) {
+                    return new Reference($senderAliases[$sender] ?? $sender);
+                }, $messageConfiguration['senders']);
                 $chainSenderDefinition = new Definition(ChainSender::class, array($senders));
+                $chainSenderDefinition->addTag('messenger.sender');
                 $chainSenderId = '.messenger.chain_sender.'.$message;
                 $container->setDefinition($chainSenderId, $chainSenderDefinition);
                 $messageToSenderIdMapping[$message] = $chainSenderId;
@@ -1533,20 +1552,6 @@ class FrameworkExtension extends Extension
 
         $container->getDefinition('messenger.asynchronous.routing.sender_locator')->replaceArgument(1, $messageToSenderIdMapping);
         $container->getDefinition('messenger.middleware.route_messages')->replaceArgument(1, $messageToSendAndHandleMapping);
-
-        foreach ($config['transports'] as $name => $transport) {
-            if (0 === strpos($transport['dsn'], 'amqp://') && !$container->hasDefinition('messenger.transport.amqp.factory')) {
-                throw new LogicException('The default AMQP transport is not available. Make sure you have installed and enabled the Serializer component. Try enable it or install it by running "composer require symfony/serializer-pack".');
-            }
-
-            $transportDefinition = (new Definition(TransportInterface::class))
-                ->setFactory(array(new Reference('messenger.transport_factory'), 'createTransport'))
-                ->setArguments(array($transport['dsn'], $transport['options']))
-                ->addTag('messenger.receiver', array('alias' => $name))
-                ->addTag('messenger.sender', array('alias' => $name))
-            ;
-            $container->setDefinition('messenger.transport.'.$name, $transportDefinition);
-        }
     }
 
     private function registerCacheConfiguration(array $config, ContainerBuilder $container)
@@ -1628,7 +1633,7 @@ class FrameworkExtension extends Extension
      */
     public function getXsdValidationBasePath()
     {
-        return dirname(__DIR__).'/Resources/config/schema';
+        return \dirname(__DIR__).'/Resources/config/schema';
     }
 
     public function getNamespace()
