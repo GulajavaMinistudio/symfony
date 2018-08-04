@@ -1225,7 +1225,10 @@ class Request
                 if ($method = $this->headers->get('X-HTTP-METHOD-OVERRIDE')) {
                     $this->method = strtoupper($method);
                 } elseif (self::$httpMethodParameterOverride) {
-                    $this->method = strtoupper($this->request->get('_method', $this->query->get('_method', 'POST')));
+                    $method = $this->request->get('_method', $this->query->get('_method', 'POST'));
+                    if (\is_string($method)) {
+                        $this->method = strtoupper($method);
+                    }
                 }
             }
         }
@@ -1704,18 +1707,7 @@ class Request
     {
         $requestUri = '';
 
-        if ($this->headers->has('X_ORIGINAL_URL')) {
-            // IIS with Microsoft Rewrite Module
-            $requestUri = $this->headers->get('X_ORIGINAL_URL');
-            $this->headers->remove('X_ORIGINAL_URL');
-            $this->server->remove('HTTP_X_ORIGINAL_URL');
-            $this->server->remove('UNENCODED_URL');
-            $this->server->remove('IIS_WasUrlRewritten');
-        } elseif ($this->headers->has('X_REWRITE_URL')) {
-            // IIS with ISAPI_Rewrite
-            $requestUri = $this->headers->get('X_REWRITE_URL');
-            $this->headers->remove('X_REWRITE_URL');
-        } elseif ('1' == $this->server->get('IIS_WasUrlRewritten') && '' != $this->server->get('UNENCODED_URL')) {
+        if ('1' == $this->server->get('IIS_WasUrlRewritten') && '' != $this->server->get('UNENCODED_URL')) {
             // IIS7 with URL Rewrite: make sure we get the unencoded URL (double slash problem)
             $requestUri = $this->server->get('UNENCODED_URL');
             $this->server->remove('UNENCODED_URL');
@@ -1970,7 +1962,7 @@ class Request
             foreach ($parts as $subParts) {
                 $assoc = HeaderUtils::combine($subParts);
                 if (isset($assoc[$param])) {
-                    $forwardedValues[] = $assoc[$param];
+                    $forwardedValues[] = self::HEADER_X_FORWARDED_PORT === $type ? substr_replace($assoc[$param], '0.0.0.0', 0, strrpos($assoc[$param], ':')) : $assoc[$param];
                 }
             }
         }

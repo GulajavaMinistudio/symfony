@@ -80,9 +80,9 @@ final class PhpDocTypeHelper
     /**
      * Creates a {@see Type} from a PHPDoc type.
      */
-    private function createType(DocType $type, bool $nullable): ?Type
+    private function createType(DocType $type, bool $nullable, string $docType = null): ?Type
     {
-        $docType = (string) $type;
+        $docType = $docType ?? (string) $type;
 
         if ($type instanceof Collection) {
             list($phpType, $class) = $this->getPhpTypeAndClass((string) $type->getFqsen());
@@ -103,25 +103,23 @@ final class PhpDocTypeHelper
             return null;
         }
 
-        if ($collection = '[]' === substr($docType, -2)) {
-            $docType = substr($docType, 0, -2);
+        if ('[]' === substr($docType, -2)) {
+            if ('mixed[]' === $docType) {
+                $collectionKeyType = null;
+                $collectionValueType = null;
+            } else {
+                $collectionKeyType = new Type(Type::BUILTIN_TYPE_INT);
+                $collectionValueType = $this->createType($type, $nullable, substr($docType, 0, -2));
+            }
+
+            return new Type(Type::BUILTIN_TYPE_ARRAY, $nullable, null, true, $collectionKeyType, $collectionValueType);
         }
 
         $docType = $this->normalizeType($docType);
         list($phpType, $class) = $this->getPhpTypeAndClass($docType);
 
-        $array = 'array' === $docType;
-
-        if ($collection || $array) {
-            if ($array || 'mixed' === $docType) {
-                $collectionKeyType = null;
-                $collectionValueType = null;
-            } else {
-                $collectionKeyType = new Type(Type::BUILTIN_TYPE_INT);
-                $collectionValueType = new Type($phpType, $nullable, $class);
-            }
-
-            return new Type(Type::BUILTIN_TYPE_ARRAY, $nullable, null, true, $collectionKeyType, $collectionValueType);
+        if ('array' === $docType) {
+            return new Type(Type::BUILTIN_TYPE_ARRAY, $nullable, null, true, null, null);
         }
 
         return new Type($phpType, $nullable, $class);

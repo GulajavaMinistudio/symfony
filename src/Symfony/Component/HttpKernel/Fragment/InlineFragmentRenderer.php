@@ -16,6 +16,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Controller\ControllerReference;
 use Symfony\Component\HttpKernel\Event\GetResponseForExceptionEvent;
+use Symfony\Component\HttpKernel\HttpCache\SubRequestHandler;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
 use Symfony\Component\HttpKernel\KernelEvents;
 
@@ -76,7 +77,7 @@ class InlineFragmentRenderer extends RoutableFragmentRenderer
 
         $level = ob_get_level();
         try {
-            return $this->kernel->handle($subRequest, HttpKernelInterface::SUB_REQUEST, false);
+            return SubRequestHandler::handle($this->kernel, $subRequest, HttpKernelInterface::SUB_REQUEST, false);
         } catch (\Exception $e) {
             // we dispatch the exception event to trigger the logging
             // the response that comes back is simply ignored
@@ -108,15 +109,6 @@ class InlineFragmentRenderer extends RoutableFragmentRenderer
     {
         $cookies = $request->cookies->all();
         $server = $request->server->all();
-
-        if (Request::HEADER_X_FORWARDED_FOR & Request::getTrustedHeaderSet()) {
-            $currentXForwardedFor = $request->headers->get('X_FORWARDED_FOR', '');
-
-            $server['HTTP_X_FORWARDED_FOR'] = ($currentXForwardedFor ? $currentXForwardedFor.', ' : '').$request->getClientIp();
-        }
-
-        $trustedProxies = Request::getTrustedProxies();
-        $server['REMOTE_ADDR'] = $trustedProxies ? reset($trustedProxies) : '127.0.0.1';
 
         unset($server['HTTP_IF_MODIFIED_SINCE']);
         unset($server['HTTP_IF_NONE_MATCH']);
