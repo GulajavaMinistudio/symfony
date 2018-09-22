@@ -16,8 +16,6 @@ use Symfony\Component\Validator\Constraints\GroupSequence;
 
 /**
  * @author Maxime Steinhausser <maxime.steinhausser@gmail.com>
- *
- * @experimental in 4.1
  */
 final class ValidationConfiguration implements EnvelopeItemInterface
 {
@@ -34,25 +32,5 @@ final class ValidationConfiguration implements EnvelopeItemInterface
     public function getGroups()
     {
         return $this->groups;
-    }
-
-    public function serialize()
-    {
-        $isGroupSequence = $this->groups instanceof GroupSequence;
-
-        return serialize(array(
-            'groups' => $isGroupSequence ? $this->groups->groups : $this->groups,
-            'is_group_sequence' => $isGroupSequence,
-        ));
-    }
-
-    public function unserialize($serialized)
-    {
-        list(
-            'groups' => $groups,
-            'is_group_sequence' => $isGroupSequence
-        ) = unserialize($serialized, array('allowed_classes' => false));
-
-        $this->__construct($isGroupSequence ? new GroupSequence($groups) : $groups);
     }
 }

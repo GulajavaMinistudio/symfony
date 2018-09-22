@@ -783,7 +783,7 @@ TABLE;
         $table->render();
     }
 
-    public function testColumnWith()
+    public function testColumnWidth()
     {
         $table = new Table($output = $this->getOutputStream());
         $table
@@ -815,7 +815,7 @@ TABLE;
         $this->assertEquals($expected, $this->getOutputContent($output));
     }
 
-    public function testColumnWiths()
+    public function testColumnWidths()
     {
         $table = new Table($output = $this->getOutputStream());
         $table
@@ -1048,6 +1048,33 @@ TABLE
 TABLE
             ),
         );
+    }
+
+    public function testColumnMaxWidths()
+    {
+        $table = new Table($output = $this->getOutputStream());
+        $table
+            ->setRows(array(
+                array('Divine Comedy', 'A Tale of Two Cities', 'The Lord of the Rings', 'And Then There Were None'),
+            ))
+            ->setColumnMaxWidth(1, 5)
+            ->setColumnMaxWidth(2, 10)
+            ->setColumnMaxWidth(3, 15);
+
+        $table->render();
+
+        $expected =
+            <<<TABLE
++---------------+-------+------------+-----------------+
+| Divine Comedy | A Tal | The Lord o | And Then There  |
+|               | e of  | f the Ring | Were None       |
+|               | Two C | s          |                 |
+|               | ities |            |                 |
++---------------+-------+------------+-----------------+
+
+TABLE;
+
+        $this->assertEquals($expected, $this->getOutputContent($output));
     }
 
     protected function getOutputStream($decorated = false)

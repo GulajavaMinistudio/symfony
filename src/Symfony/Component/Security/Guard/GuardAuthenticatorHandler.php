@@ -54,10 +54,8 @@ class GuardAuthenticatorHandler
      *
      * @param string $providerKey The name of the provider/firewall being used for authentication
      */
-    public function authenticateWithToken(TokenInterface $token, Request $request/*, string $providerKey */)
+    public function authenticateWithToken(TokenInterface $token, Request $request, string $providerKey = null)
     {
-        $providerKey = \func_num_args() > 2 ? func_get_arg(2) : null;
-
         $this->migrateSession($request, $token, $providerKey);
         $this->tokenStorage->setToken($token);
 
@@ -79,11 +77,7 @@ class GuardAuthenticatorHandler
             return $response;
         }
 
-        throw new \UnexpectedValueException(sprintf(
-            'The %s::onAuthenticationSuccess method must return null or a Response object. You returned %s.',
-            \get_class($guardAuthenticator),
-            \is_object($response) ? \get_class($response) : \gettype($response)
-        ));
+        throw new \UnexpectedValueException(sprintf('The %s::onAuthenticationSuccess method must return null or a Response object. You returned %s.', \get_class($guardAuthenticator), \is_object($response) ? \get_class($response) : \gettype($response)));
     }
 
     /**
@@ -113,11 +107,7 @@ class GuardAuthenticatorHandler
             return $response;
         }
 
-        throw new \UnexpectedValueException(sprintf(
-            'The %s::onAuthenticationFailure method must return null or a Response object. You returned %s.',
-            \get_class($guardAuthenticator),
-            \is_object($response) ? \get_class($response) : \gettype($response)
-        ));
+        throw new \UnexpectedValueException(sprintf('The %s::onAuthenticationFailure method must return null or a Response object. You returned %s.', \get_class($guardAuthenticator), \is_object($response) ? \get_class($response) : \gettype($response)));
     }
 
     /**

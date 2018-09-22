@@ -13,12 +13,11 @@ namespace Symfony\Component\Messenger;
 
 /**
  * An envelope item related to a message.
+ *
  * This item must be serializable for transport.
  *
  * @author Maxime Steinhausser <maxime.steinhausser@gmail.com>
- *
- * @experimental in 4.1
  */
-interface EnvelopeItemInterface extends \Serializable
+interface EnvelopeItemInterface
 {
 }

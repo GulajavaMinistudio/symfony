@@ -13,6 +13,7 @@ namespace Symfony\Component\Console\Helper;
 
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Exception\RuntimeException;
+use Symfony\Component\Console\Formatter\WrappableOutputFormatterInterface;
 use Symfony\Component\Console\Output\ConsoleSectionOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -80,6 +81,7 @@ class Table
      * @var array
      */
     private $columnWidths = array();
+    private $columnMaxWidths = array();
 
     private static $styles;
 
@@ -222,6 +224,25 @@ class Table
         return $this;
     }
 
+    /**
+     * Sets the maximum width of a column.
+     *
+     * Any cell within this column which contents exceeds the specified width will be wrapped into multiple lines, while
+     * formatted strings are preserved.
+     *
+     * @return $this
+     */
+    public function setColumnMaxWidth(int $columnIndex, int $width): self
+    {
+        if (!$this->output->getFormatter() instanceof WrappableOutputFormatterInterface) {
+            throw new \LogicException(sprintf('Setting a maximum column width is only supported when using a "%s" formatter, got "%s".', WrappableOutputFormatterInterface::class, \get_class($this->output->getFormatter())));
+        }
+
+        $this->columnMaxWidths[$columnIndex] = $width;
+
+        return $this;
+    }
+
     public function setHeaders(array $headers)
     {
         $headers = array_values($headers);
@@ -311,15 +332,14 @@ class Table
      * Renders table to output.
      *
      * Example:
-     * <code>
-     * +---------------+-----------------------+------------------+
-     * | ISBN          | Title                 | Author           |
-     * +---------------+-----------------------+------------------+
-     * | 99921-58-10-7 | Divine Comedy         | Dante Alighieri  |
-     * | 9971-5-0210-0 | A Tale of Two Cities  | Charles Dickens  |
-     * | 960-425-059-0 | The Lord of the Rings | J. R. R. Tolkien |
-     * +---------------+-----------------------+------------------+
-     * </code>
+     *
+     *     +---------------+-----------------------+------------------+
+     *     | ISBN          | Title                 | Author           |
+     *     +---------------+-----------------------+------------------+
+     *     | 99921-58-10-7 | Divine Comedy         | Dante Alighieri  |
+     *     | 9971-5-0210-0 | A Tale of Two Cities  | Charles Dickens  |
+     *     | 960-425-059-0 | The Lord of the Rings | J. R. R. Tolkien |
+     *     +---------------+-----------------------+------------------+
      */
     public function render()
     {
@@ -367,7 +387,9 @@ class Table
     /**
      * Renders horizontal header separator.
      *
-     * Example: <code>+-----+-----------+-------+</code>
+     * Example:
+     *
+     *     +-----+-----------+-------+
      */
     private function renderRowSeparator(int $type = self::SEPARATOR_MID, string $title = null, string $titleFormat = null)
     {
@@ -430,7 +452,9 @@ class Table
     /**
      * Renders table row.
      *
-     * Example: <code>| 9971-5-0210-0 | A Tale of Two Cities  | Charles Dickens  |</code>
+     * Example:
+     *
+     *     | 9971-5-0210-0 | A Tale of Two Cities  | Charles Dickens  |
      */
     private function renderRow(array $row, string $cellFormat)
     {
@@ -494,12 +518,17 @@ class Table
 
     private function buildTableRows($rows)
     {
+        /** @var WrappableOutputFormatterInterface $formatter */
+        $formatter = $this->output->getFormatter();
         $unmergedRows = array();
         for ($rowKey = 0; $rowKey < \count($rows); ++$rowKey) {
             $rows = $this->fillNextRows($rows, $rowKey);
 
             // Remove any new line breaks and replace it with a new line
             foreach ($rows[$rowKey] as $column => $cell) {
+                if (isset($this->columnMaxWidths[$column]) && Helper::strlenWithoutDecoration($formatter, $cell) > $this->columnMaxWidths[$column]) {
+                    $cell = $formatter->formatAndWrap($cell, $this->columnMaxWidths[$column]);
+                }
                 if (!strstr($cell, "\n")) {
                     continue;
                 }
@@ -707,8 +736,9 @@ class Table
         }
 
         $columnWidth = isset($this->columnWidths[$column]) ? $this->columnWidths[$column] : 0;
+        $cellWidth = max($cellWidth, $columnWidth);
 
-        return max($cellWidth, $columnWidth);
+        return isset($this->columnMaxWidths[$column]) ? min($this->columnMaxWidths[$column], $cellWidth) : $cellWidth;
     }
 
     /**

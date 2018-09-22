@@ -15,8 +15,6 @@ use Symfony\Component\Messenger\EnvelopeItemInterface;
 
 /**
  * @author Maxime Steinhausser <maxime.steinhausser@gmail.com>
- *
- * @experimental in 4.1
  */
 final class SerializerConfiguration implements EnvelopeItemInterface
 {
@@ -30,17 +28,5 @@ final class SerializerConfiguration implements EnvelopeItemInterface
     public function getContext(): array
     {
         return $this->context;
-    }
-
-    public function serialize()
-    {
-        return serialize(array('context' => $this->context));
-    }
-
-    public function unserialize($serialized)
-    {
-        list('context' => $context) = unserialize($serialized, array('allowed_classes' => false));
-
-        $this->__construct($context);
     }
 }

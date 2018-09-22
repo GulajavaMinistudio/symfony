@@ -11,6 +11,8 @@
 
 namespace Symfony\Component\Debug;
 
+use PHPUnit\Framework\MockObject\Matcher\StatelessInvocation;
+
 /**
  * Autoloader checking if the class is really defined in the file found.
  *
@@ -21,6 +23,7 @@ namespace Symfony\Component\Debug;
  * @author Fabien Potencier <fabien@symfony.com>
  * @author Christophe Coevoet <stof@notk.org>
  * @author Nicolas Grekas <p@tchwork.com>
+ * @author Guilhem Niot <guilhem.niot@gmail.com>
  */
 class DebugClassLoader
 {
@@ -34,6 +37,7 @@ class DebugClassLoader
     private static $deprecated = array();
     private static $internal = array();
     private static $internalMethods = array();
+    private static $annotatedParameters = array();
     private static $darwinCache = array('/' => array('/', array()));
 
     public function __construct(callable $classLoader)
@@ -200,9 +204,12 @@ class DebugClassLoader
                 }
             }
 
+            $parent = \get_parent_class($class);
             $parentAndTraits = \class_uses($name, false);
-            if ($parent = \get_parent_class($class)) {
-                $parentAndTraits[] = $parent;
+            $parentAndOwnInterfaces = $this->getOwnInterfaces($name, $parent);
+            if ($parent) {
+                $parentAndTraits[$parent] = $parent;
+                $parentAndOwnInterfaces[$parent] = $parent;
 
                 if (!isset(self::$checkedClasses[$parent])) {
                     $this->checkClass($parent);
@@ -214,7 +221,7 @@ class DebugClassLoader
             }
 
             // Detect if the parent is annotated
-            foreach ($parentAndTraits + $this->getOwnInterfaces($name, $parent) as $use) {
+            foreach ($parentAndTraits + $parentAndOwnInterfaces as $use) {
                 if (!isset(self::$checkedClasses[$use])) {
                     $this->checkClass($use);
                 }
@@ -229,11 +236,17 @@ class DebugClassLoader
                 }
             }
 
-            // Inherit @final and @internal annotations for methods
+            // Inherit @final, @internal and @param annotations for methods
             self::$finalMethods[$name] = array();
             self::$internalMethods[$name] = array();
-            foreach ($parentAndTraits as $use) {
-                foreach (array('finalMethods', 'internalMethods') as $property) {
+            self::$annotatedParameters[$name] = array();
+            $map = array(
+                'finalMethods' => $parentAndTraits,
+                'internalMethods' => $parentAndTraits,
+                'annotatedParameters' => $parentAndOwnInterfaces, // We don't parse traits params
+            );
+            foreach ($map as $property => $uses) {
+                foreach ($uses as $use) {
                     if (isset(self::${$property}[$use])) {
                         self::${$property}[$name] = self::${$property}[$name] ? self::${$property}[$use] + self::${$property}[$name] : self::${$property}[$use];
                     }
@@ -246,34 +259,68 @@ class DebugClassLoader
                     continue;
                 }
 
-                // Method from a trait
-                if ($method->getFilename() !== $refl->getFileName()) {
-                    continue;
-                }
-
                 if ($isClass && $parent && isset(self::$finalMethods[$parent][$method->name])) {
                     list($declaringClass, $message) = self::$finalMethods[$parent][$method->name];
                     @trigger_error(sprintf('The "%s::%s()" method is considered final%s. It may change without further notice as of its next major version. You should not extend it from "%s".', $declaringClass, $method->name, $message, $name), E_USER_DEPRECATED);
                 }
 
-                foreach ($parentAndTraits as $use) {
-                    if (isset(self::$internalMethods[$use][$method->name])) {
-                        list($declaringClass, $message) = self::$internalMethods[$use][$method->name];
-                        if (\strncmp($ns, $declaringClass, $len)) {
-                            @trigger_error(sprintf('The "%s::%s()" method is considered internal%s. It may change without further notice. You should not extend it from "%s".', $declaringClass, $method->name, $message, $name), E_USER_DEPRECATED);
+                if (isset(self::$internalMethods[$name][$method->name])) {
+                    list($declaringClass, $message) = self::$internalMethods[$name][$method->name];
+                    if (\strncmp($ns, $declaringClass, $len)) {
+                        @trigger_error(sprintf('The "%s::%s()" method is considered internal%s. It may change without further notice. You should not extend it from "%s".', $declaringClass, $method->name, $message, $name), E_USER_DEPRECATED);
+                    }
+                }
+
+                // To read method annotations
+                $doc = $method->getDocComment();
+
+                if (isset(self::$annotatedParameters[$name][$method->name])) {
+                    $definedParameters = array();
+                    foreach ($method->getParameters() as $parameter) {
+                        $definedParameters[$parameter->name] = true;
+                    }
+
+                    foreach (self::$annotatedParameters[$name][$method->name] as $parameterName => $deprecation) {
+                        if (!isset($definedParameters[$parameterName]) && !($doc && preg_match("/\\n\\s+\\* @param (.*?)(?<= )\\\${$parameterName}\\b/", $doc))) {
+                            @trigger_error(sprintf($deprecation, $name), E_USER_DEPRECATED);
                         }
                     }
                 }
 
-                // Detect method annotations
-                if (false === $doc = $method->getDocComment()) {
+                if (!$doc) {
                     continue;
                 }
 
-                foreach (array('final', 'internal') as $annotation) {
-                    if (false !== \strpos($doc, $annotation) && preg_match('#\n\s+\* @'.$annotation.'(?:( .+?)\.?)?\r?\n\s+\*(?: @|/$)#s', $doc, $notice)) {
-                        $message = isset($notice[1]) ? preg_replace('#\s*\r?\n \* +#', ' ', $notice[1]) : '';
-                        self::${$annotation.'Methods'}[$name][$method->name] = array($name, $message);
+                $finalOrInternal = false;
+
+                // Skip methods from traits
+                if ($method->getFilename() === $refl->getFileName()) {
+                    foreach (array('final', 'internal') as $annotation) {
+                        if (false !== \strpos($doc, $annotation) && preg_match('#\n\s+\* @'.$annotation.'(?:( .+?)\.?)?\r?\n\s+\*(?: @|/$)#s', $doc, $notice)) {
+                            $message = isset($notice[1]) ? preg_replace('#\s*\r?\n \* +#', ' ', $notice[1]) : '';
+                            self::${$annotation.'Methods'}[$name][$method->name] = array($name, $message);
+                            $finalOrInternal = true;
+                        }
+                    }
+                }
+
+                if ($finalOrInternal || $method->isConstructor() || false === \strpos($doc, '@param') || StatelessInvocation::class === $name) {
+                    continue;
+                }
+
+                if (!preg_match_all('#\n\s+\* @param (.*?)(?<= )\$([a-zA-Z0-9_\x7f-\xff]++)#', $doc, $matches, PREG_SET_ORDER)) {
+                    continue;
+                }
+                if (!isset(self::$annotatedParameters[$name][$method->name])) {
+                    $definedParameters = array();
+                    foreach ($method->getParameters() as $parameter) {
+                        $definedParameters[$parameter->name] = true;
+                    }
+                }
+                foreach ($matches as list(, $parameterType, $parameterName)) {
+                    if (!isset($definedParameters[$parameterName])) {
+                        $parameterType = trim($parameterType);
+                        self::$annotatedParameters[$name][$method->name][$parameterName] = sprintf('The "%%s::%s()" method will require a new "%s$%s" argument in the next major version of its parent class "%s", not defining it is deprecated.', $method->name, $parameterType ? $parameterType.' ' : '', $parameterName, $method->class);
                     }
                 }
             }

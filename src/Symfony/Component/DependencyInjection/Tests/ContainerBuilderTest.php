@@ -1378,6 +1378,17 @@ class ContainerBuilderTest extends TestCase
         $this->assertSame($childDefA, $container->registerForAutoconfiguration('AInterface'));
     }
 
+    public function testRegisterAliasForArgument()
+    {
+        $container = new ContainerBuilder();
+
+        $container->registerAliasForArgument('Foo.bar_baz', 'Some\FooInterface');
+        $this->assertEquals(new Alias('Foo.bar_baz'), $container->getAlias('Some\FooInterface $fooBarBaz'));
+
+        $container->registerAliasForArgument('Foo.bar_baz', 'Some\FooInterface', 'Bar_baz.foo');
+        $this->assertEquals(new Alias('Foo.bar_baz'), $container->getAlias('Some\FooInterface $barBazFoo'));
+    }
+
     public function testCaseSensitivity()
     {
         $container = new ContainerBuilder();
@@ -1502,6 +1513,22 @@ class ContainerBuilderTest extends TestCase
 
         $container->set('foo5', $foo5 = new \stdClass());
         $this->assertSame($foo5, $locator->get('foo5'));
+    }
+
+    public function testDecoratedSelfReferenceInvolvingPrivateServices()
+    {
+        $container = new ContainerBuilder();
+        $container->register('foo', 'stdClass')
+            ->setPublic(false)
+            ->setProperty('bar', new Reference('foo'));
+        $container->register('baz', 'stdClass')
+            ->setPublic(false)
+            ->setProperty('inner', new Reference('baz.inner'))
+            ->setDecoratedService('foo');
+
+        $container->compile();
+
+        $this->assertSame(array('service_container'), array_keys($container->getDefinitions()));
     }
 }
 

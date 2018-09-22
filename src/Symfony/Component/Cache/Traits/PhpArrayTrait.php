@@ -13,7 +13,7 @@ namespace Symfony\Component\Cache\Traits;
 
 use Symfony\Component\Cache\CacheItem;
 use Symfony\Component\Cache\Exception\InvalidArgumentException;
-use Symfony\Component\Cache\Marshaller\PhpMarshaller;
+use Symfony\Component\VarExporter\VarExporter;
 
 /**
  * @author Titouan Galopin <galopintitouan@gmail.com>
@@ -70,34 +70,31 @@ EOF;
 
         foreach ($values as $key => $value) {
             CacheItem::validateKey(\is_int($key) ? (string) $key : $key);
-            $objectsCount = 0;
+            $isStaticValue = true;
 
             if (null === $value) {
-                $value = 'N;';
+                $value = "'N;'";
             } elseif (\is_object($value) || \is_array($value)) {
                 try {
-                    $e = null;
-                    $serialized = serialize($value);
+                    $value = VarExporter::export($value, $isStaticValue);
                 } catch (\Exception $e) {
-                }
-                if (null !== $e || false === $serialized) {
                     throw new InvalidArgumentException(sprintf('Cache key "%s" has non-serializable %s value.', $key, \is_object($value) ? \get_class($value) : 'array'), 0, $e);
                 }
-                // Keep value serialized if it contains any internal references
-                $value = false !== strpos($serialized, ';R:') ? $serialized : PhpMarshaller::marshall($value, $objectsCount);
             } elseif (\is_string($value)) {
-                // Wrap strings if they could be confused with serialized objects or arrays
-                if ('N;' === $value || (isset($value[2]) && ':' === $value[1])) {
-                    ++$objectsCount;
+                // Wrap "N;" in a closure to not confuse it with an encoded `null`
+                if ('N;' === $value) {
+                    $isStaticValue = false;
                 }
+                $value = var_export($value, true);
             } elseif (!\is_scalar($value)) {
                 throw new InvalidArgumentException(sprintf('Cache key "%s" has non-serializable %s value.', $key, \gettype($value)));
+            } else {
+                $value = var_export($value, true);
             }
 
-            $value = var_export($value, true);
-            if ($objectsCount) {
-                $value = PhpMarshaller::optimize($value);
-                $value = "static function () {\nreturn {$value};\n}";
+            if (!$isStaticValue) {
+                $value = str_replace("\n", "\n    ", $value);
+                $value = "static function () {\n    return {$value};\n}";
             }
             $hash = hash('md5', $value);
 

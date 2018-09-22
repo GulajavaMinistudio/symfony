@@ -13,18 +13,20 @@ namespace Symfony\Bundle\FrameworkBundle\DependencyInjection;
 
 use Doctrine\Common\Annotations\AnnotationRegistry;
 use Doctrine\Common\Annotations\Reader;
+use Psr\Cache\CacheItemPoolInterface;
+use Psr\Container\ContainerInterface as PsrContainerInterface;
 use Psr\Log\LoggerAwareInterface;
 use Symfony\Bridge\Monolog\Processor\DebugProcessor;
 use Symfony\Bridge\Monolog\Processor\ProcessorInterface;
 use Symfony\Bridge\Twig\Extension\CsrfExtension;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use Symfony\Bundle\FrameworkBundle\Routing\AnnotatedRouteControllerLoader;
 use Symfony\Bundle\FullStack;
 use Symfony\Component\Cache\Adapter\AbstractAdapter;
 use Symfony\Component\Cache\Adapter\AdapterInterface;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
 use Symfony\Component\Cache\Adapter\TagAwareAdapter;
+use Symfony\Component\Cache\CacheInterface;
 use Symfony\Component\Cache\Marshaller\DefaultMarshaller;
 use Symfony\Component\Cache\Marshaller\MarshallerInterface;
 use Symfony\Component\Cache\ResettableInterface;
@@ -45,11 +47,8 @@ use Symfony\Component\DependencyInjection\Exception\InvalidArgumentException;
 use Symfony\Component\DependencyInjection\Exception\LogicException;
 use Symfony\Component\DependencyInjection\Loader\XmlFileLoader;
 use Symfony\Component\DependencyInjection\Parameter;
-use Symfony\Component\DependencyInjection\ParameterBag\ContainerBagInterface;
-use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\DependencyInjection\Reference;
 use Symfony\Component\DependencyInjection\ServiceLocator;
-use Symfony\Component\DependencyInjection\ServiceSubscriberInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
 use Symfony\Component\Finder\Finder;
@@ -63,6 +62,7 @@ use Symfony\Component\HttpKernel\DependencyInjection\Extension;
 use Symfony\Component\Lock\Factory;
 use Symfony\Component\Lock\Lock;
 use Symfony\Component\Lock\LockInterface;
+use Symfony\Component\Lock\Store\FlockStore;
 use Symfony\Component\Lock\Store\StoreFactory;
 use Symfony\Component\Lock\StoreInterface;
 use Symfony\Component\Messenger\Handler\MessageHandlerInterface;
@@ -74,6 +74,7 @@ use Symfony\Component\Messenger\Transport\TransportInterface;
 use Symfony\Component\PropertyAccess\PropertyAccessor;
 use Symfony\Component\PropertyInfo\PropertyAccessExtractorInterface;
 use Symfony\Component\PropertyInfo\PropertyDescriptionExtractorInterface;
+use Symfony\Component\PropertyInfo\PropertyInitializableExtractorInterface;
 use Symfony\Component\PropertyInfo\PropertyListExtractorInterface;
 use Symfony\Component\PropertyInfo\PropertyTypeExtractorInterface;
 use Symfony\Component\Routing\Loader\AnnotationDirectoryLoader;
@@ -95,9 +96,11 @@ use Symfony\Component\Validator\ConstraintValidatorInterface;
 use Symfony\Component\Validator\ObjectInitializerInterface;
 use Symfony\Component\WebLink\HttpHeaderSerializer;
 use Symfony\Component\Workflow;
+use Symfony\Component\Workflow\WorkflowInterface;
 use Symfony\Component\Yaml\Command\LintCommand as BaseYamlLintCommand;
 use Symfony\Component\Yaml\Yaml;
 use Symfony\Contracts\Service\ResetInterface;
+use Symfony\Contracts\Service\ServiceSubscriberInterface;
 
 /**
  * FrameworkExtension.
@@ -114,6 +117,7 @@ class FrameworkExtension extends Extension
     private $sessionConfigEnabled = false;
     private $annotationsConfigEnabled = false;
     private $validatorConfigEnabled = false;
+    private $messengerConfigEnabled = false;
 
     /**
      * Responds to the app.config configuration parameter.
@@ -128,11 +132,7 @@ class FrameworkExtension extends Extension
         $loader->load('services.xml');
         $loader->load('fragment_renderer.xml');
 
-        if (!interface_exists(ContainerBagInterface::class)) {
-            $container->removeDefinition('parameter_bag');
-            $container->removeAlias(ContainerBagInterface::class);
-            $container->removeAlias(ParameterBagInterface::class);
-        }
+        $container->registerAliasForArgument('parameter_bag', PsrContainerInterface::class);
 
         if (class_exists(Application::class)) {
             $loader->load('console.xml');
@@ -275,7 +275,7 @@ class FrameworkExtension extends Extension
             $this->registerLockConfiguration($config['lock'], $container, $loader);
         }
 
-        if ($this->isConfigEnabled($container, $config['messenger'])) {
+        if ($this->messengerConfigEnabled = $this->isConfigEnabled($container, $config['messenger'])) {
             $this->registerMessengerConfiguration($config['messenger'], $container, $loader, $config['serializer'], $config['validation']);
         } else {
             $container->removeDefinition('console.command.messenger_consume_messages');
@@ -296,7 +296,6 @@ class FrameworkExtension extends Extension
 
             // Added explicitly so that we don't rely on the class map being dumped to make it work
             'Symfony\\Bundle\\FrameworkBundle\\Controller\\AbstractController',
-            'Symfony\\Bundle\\FrameworkBundle\\Controller\\Controller',
         ));
 
         $container->registerForAutoconfiguration(Command::class)
@@ -313,7 +312,7 @@ class FrameworkExtension extends Extension
             ->addTag('controller.argument_value_resolver');
         $container->registerForAutoconfiguration(AbstractController::class)
             ->addTag('controller.service_arguments');
-        $container->registerForAutoconfiguration(Controller::class)
+        $container->registerForAutoconfiguration('Symfony\Bundle\FrameworkBundle\Controller\Controller')
             ->addTag('controller.service_arguments');
         $container->registerForAutoconfiguration(DataCollectorInterface::class)
             ->addTag('data_collector');
@@ -345,6 +344,8 @@ class FrameworkExtension extends Extension
             ->addTag('property_info.description_extractor');
         $container->registerForAutoconfiguration(PropertyAccessExtractorInterface::class)
             ->addTag('property_info.access_extractor');
+        $container->registerForAutoconfiguration(PropertyInitializableExtractorInterface::class)
+            ->addTag('property_info.initializable_extractor');
         $container->registerForAutoconfiguration(EncoderInterface::class)
             ->addTag('serializer.encoder');
         $container->registerForAutoconfiguration(DecoderInterface::class)
@@ -459,6 +460,10 @@ class FrameworkExtension extends Extension
             $loader->load('translation_debug.xml');
 
             $container->getDefinition('translator.data_collector')->setDecoratedService('translator');
+        }
+
+        if ($this->messengerConfigEnabled) {
+            $loader->load('messenger_debug.xml');
         }
 
         $container->setParameter('profiler_listener.only_exceptions', $config['only_exceptions']);
@@ -581,6 +586,7 @@ class FrameworkExtension extends Extension
             // Store to container
             $container->setDefinition($workflowId, $workflowDefinition);
             $container->setDefinition(sprintf('%s.definition', $workflowId), $definitionDefinition);
+            $container->registerAliasForArgument($workflowId, WorkflowInterface::class, $name.'.'.$type);
 
             // Add workflow to Registry
             if ($workflow['supports']) {
@@ -704,12 +710,6 @@ class FrameworkExtension extends Extension
         if ($config['utf8']) {
             $container->getDefinition('routing.loader')->replaceArgument(2, array('utf8' => true));
         }
-        if (!interface_exists(ContainerBagInterface::class)) {
-            $container->getDefinition('router.default')
-                ->replaceArgument(0, new Reference('service_container'))
-                ->clearTag('container.service_subscriber')
-            ;
-        }
 
         $container->setParameter('router.resource', $config['resource']);
         $container->setParameter('router.cache_class_prefix', $container->getParameter('kernel.container_class'));
@@ -755,10 +755,18 @@ class FrameworkExtension extends Extension
         // session storage
         $container->setAlias('session.storage', $config['storage_id'])->setPrivate(true);
         $options = array('cache_limiter' => '0');
-        foreach (array('name', 'cookie_lifetime', 'cookie_path', 'cookie_domain', 'cookie_secure', 'cookie_httponly', 'use_cookies', 'gc_maxlifetime', 'gc_probability', 'gc_divisor') as $key) {
+        foreach (array('name', 'cookie_lifetime', 'cookie_path', 'cookie_domain', 'cookie_secure', 'cookie_httponly', 'cookie_samesite', 'use_cookies', 'gc_maxlifetime', 'gc_probability', 'gc_divisor') as $key) {
             if (isset($config[$key])) {
                 $options[$key] = $config[$key];
             }
+        }
+
+        if ('auto' === ($options['cookie_secure'] ?? null)) {
+            $locator = $container->getDefinition('session_listener')->getArgument(0);
+            $locator->setValues($locator->getValues() + array(
+                'session_storage' => new Reference('session.storage', ContainerInterface::IGNORE_ON_INVALID_REFERENCE),
+                'request_stack' => new Reference('request_stack'),
+            ));
         }
 
         $container->setParameter('session.storage.options', $options);
@@ -864,10 +872,6 @@ class FrameworkExtension extends Extension
                 $container->getDefinition('templating.helper.assets')->replaceArgument(0, new Reference('assets.packages'));
             } else {
                 $container->removeDefinition('templating.helper.assets');
-            }
-
-            if (!$this->translationConfigEnabled) {
-                $container->removeDefinition('templating.helper.translator');
             }
         }
     }
@@ -1395,6 +1399,14 @@ class FrameworkExtension extends Extension
                     case 'flock' === $storeDsn:
                         $storeDefinition = new Reference('lock.store.flock');
                         break;
+                    case 0 === strpos($storeDsn, 'flock://'):
+                        $flockPath = substr($storeDsn, 8);
+
+                        $storeDefinitionId = '.lock.flock.store.'.$container->hash($storeDsn);
+                        $container->register($storeDefinitionId, FlockStore::class)->addArgument($flockPath);
+
+                        $storeDefinition = new Reference($storeDefinitionId);
+                        break;
                     case 'semaphore' === $storeDsn:
                         $storeDefinition = new Reference('lock.store.semaphore');
                         break;
@@ -1452,6 +1464,10 @@ class FrameworkExtension extends Extension
                 $container->setAlias(StoreInterface::class, new Alias('lock.store', false));
                 $container->setAlias(Factory::class, new Alias('lock.factory', false));
                 $container->setAlias(LockInterface::class, new Alias('lock', false));
+            } else {
+                $container->registerAliasForArgument('lock.'.$resourceName.'.store', StoreInterface::class, $resourceName.'.lock.store');
+                $container->registerAliasForArgument('lock.'.$resourceName.'.factory', Factory::class, $resourceName.'.lock.factory');
+                $container->registerAliasForArgument('lock.'.$resourceName, LockInterface::class, $resourceName.'.lock');
             }
         }
     }
@@ -1464,23 +1480,26 @@ class FrameworkExtension extends Extension
 
         $loader->load('messenger.xml');
 
-        if ($this->isConfigEnabled($container, $config['serializer'])) {
-            if (!$this->isConfigEnabled($container, $serializerConfig)) {
-                throw new LogicException('The default Messenger serializer cannot be enabled as the Serializer support is not available. Try enable it or install it by running "composer require symfony/serializer-pack".');
+        if (empty($config['transports'])) {
+            $container->removeDefinition('messenger.transport.symfony_serializer');
+            $container->removeDefinition('messenger.transport.amqp.factory');
+        } else {
+            if ('messenger.transport.symfony_serializer' === $config['serializer']['id']) {
+                if (!$this->isConfigEnabled($container, $serializerConfig)) {
+                    throw new LogicException('The default Messenger serializer cannot be enabled as the Serializer support is not available. Try enable it or install it by running "composer require symfony/serializer-pack".');
+                }
+
+                $container->getDefinition('messenger.transport.symfony_serializer')
+                    ->replaceArgument(1, $config['serializer']['format'])
+                    ->replaceArgument(2, $config['serializer']['context']);
             }
 
-            $container->getDefinition('messenger.transport.serializer')
-                ->replaceArgument(1, $config['serializer']['format'])
-                ->replaceArgument(2, $config['serializer']['context']);
-        } else {
-            $container->removeDefinition('messenger.transport.serializer');
-            if ('messenger.transport.serializer' === $config['encoder'] || 'messenger.transport.serializer' === $config['decoder']) {
+            if ($config['serializer']['id']) {
+                $container->setAlias('messenger.transport.serializer', $config['serializer']['id']);
+            } else {
                 $container->removeDefinition('messenger.transport.amqp.factory');
             }
         }
-
-        $container->setAlias('messenger.transport.encoder', $config['encoder']);
-        $container->setAlias('messenger.transport.decoder', $config['decoder']);
 
         if (null === $config['default_bus']) {
             if (\count($config['buses']) > 1) {
@@ -1507,8 +1526,10 @@ class FrameworkExtension extends Extension
             $container->register($busId, MessageBus::class)->addArgument(array())->addTag('messenger.bus');
 
             if ($busId === $config['default_bus']) {
-                $container->setAlias('message_bus', $busId);
+                $container->setAlias('message_bus', $busId)->setPublic(true);
                 $container->setAlias(MessageBusInterface::class, $busId);
+            } else {
+                $container->registerAliasForArgument($busId, MessageBusInterface::class);
             }
         }
 
@@ -1593,6 +1614,8 @@ class FrameworkExtension extends Extension
                 $pool['adapter'] = '.'.$pool['adapter'].'.inner';
             }
             $definition = new ChildDefinition($pool['adapter']);
+            $container->registerAliasForArgument($name, CacheInterface::class);
+            $container->registerAliasForArgument($name, CacheItemPoolInterface::class);
 
             if ($pool['tags']) {
                 if ($config['pools'][$pool['tags']]['tags'] ?? false) {

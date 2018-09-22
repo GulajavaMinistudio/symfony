@@ -12,13 +12,12 @@
 namespace Symfony\Component\Messenger\Handler\Locator;
 
 use Psr\Container\ContainerInterface;
-use Symfony\Component\Messenger\Exception\NoHandlerForMessageException;
 
 /**
  * @author Miha Vrhovnik <miha.vrhovnik@gmail.com>
  * @author Samuel Roze <samuel.roze@gmail.com>
  */
-class ContainerHandlerLocator implements HandlerLocatorInterface
+class ContainerHandlerLocator extends AbstractHandlerLocator
 {
     private $container;
 
@@ -27,15 +26,10 @@ class ContainerHandlerLocator implements HandlerLocatorInterface
         $this->container = $container;
     }
 
-    public function resolve($message): callable
+    protected function getHandler(string $class)
     {
-        $messageClass = \get_class($message);
-        $handlerKey = 'handler.'.$messageClass;
+        $handlerKey = 'handler.'.$class;
 
-        if (!$this->container->has($handlerKey)) {
-            throw new NoHandlerForMessageException(sprintf('No handler for message "%s".', $messageClass));
-        }
-
-        return $this->container->get($handlerKey);
+        return $this->container->has($handlerKey) ? $this->container->get($handlerKey) : null;
     }
 }

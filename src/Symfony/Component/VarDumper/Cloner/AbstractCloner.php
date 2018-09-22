@@ -108,6 +108,7 @@ abstract class AbstractCloner implements ClonerInterface
 
         'Redis' => array('Symfony\Component\VarDumper\Caster\RedisCaster', 'castRedis'),
         'RedisArray' => array('Symfony\Component\VarDumper\Caster\RedisCaster', 'castRedisArray'),
+        'RedisCluster' => array('Symfony\Component\VarDumper\Caster\RedisCaster', 'castRedisCluster'),
 
         'DateTimeInterface' => array('Symfony\Component\VarDumper\Caster\DateCaster', 'castDateTime'),
         'DateInterval' => array('Symfony\Component\VarDumper\Caster\DateCaster', 'castInterval'),
@@ -115,6 +116,8 @@ abstract class AbstractCloner implements ClonerInterface
         'DatePeriod' => array('Symfony\Component\VarDumper\Caster\DateCaster', 'castPeriod'),
 
         'GMP' => array('Symfony\Component\VarDumper\Caster\GmpCaster', 'castGmp'),
+
+        'MessageFormatter' => array('Symfony\Component\VarDumper\Caster\IntlCaster', 'castMessageFormatter'),
 
         ':curl' => array('Symfony\Component\VarDumper\Caster\ResourceCaster', 'castCurl'),
         ':dba' => array('Symfony\Component\VarDumper\Caster\ResourceCaster', 'castDba'),

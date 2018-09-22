@@ -12,11 +12,13 @@
 namespace Symfony\Component\Translation;
 
 use Symfony\Component\Translation\Exception\InvalidArgumentException;
+use Symfony\Component\Translation\TranslatorInterface as LegacyTranslatorInterface;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
  * @author Abdellatif Ait boudad <a.aitboudad@gmail.com>
  */
-class DataCollectorTranslator implements TranslatorInterface, TranslatorBagInterface
+class DataCollectorTranslator implements LegacyTranslatorInterface, TranslatorBagInterface
 {
     const MESSAGE_DEFINED = 0;
     const MESSAGE_MISSING = 1;
@@ -106,7 +108,7 @@ class DataCollectorTranslator implements TranslatorInterface, TranslatorBagInter
      */
     public function __call($method, $args)
     {
-        return \call_user_func_array(array($this->translator, $method), $args);
+        return $this->translator->{$method}(...$args);
     }
 
     /**

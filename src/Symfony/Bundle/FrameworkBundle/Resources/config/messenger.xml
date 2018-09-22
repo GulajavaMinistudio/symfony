@@ -8,7 +8,7 @@
         <defaults public="false" />
 
         <!-- Asynchronous -->
-        <service id="messenger.asynchronous.routing.sender_locator" class="Symfony\Component\Messenger\Asynchronous\Routing\SenderLocator">
+        <service id="messenger.asynchronous.routing.sender_locator" class="Symfony\Component\Messenger\Asynchronous\Routing\ContainerSenderLocator">
             <argument type="service" id="messenger.sender_locator" />
             <argument type="collection" /> <!-- Message to sender ID mapping -->
         </service>
@@ -18,7 +18,7 @@
         </service>
 
         <!-- Message encoding/decoding -->
-        <service id="messenger.transport.serializer" class="Symfony\Component\Messenger\Transport\Serialization\Serializer">
+        <service id="messenger.transport.symfony_serializer" class="Symfony\Component\Messenger\Transport\Serialization\Serializer">
             <argument type="service" id="serializer" />
             <argument /> <!-- Format -->
             <argument type="collection" /> <!-- Context -->
@@ -34,15 +34,11 @@
             <argument type="service" id="validator" />
         </service>
 
-        <!-- Logging & Debug -->
+        <!-- Logging -->
         <service id="messenger.middleware.logging" class="Symfony\Component\Messenger\Middleware\LoggingMiddleware" abstract="true">
             <argument type="service" id="logger" />
 
             <tag name="monolog.logger" channel="messenger" />
-        </service>
-
-        <service id="messenger.data_collector" class="Symfony\Component\Messenger\DataCollector\MessengerDataCollector">
-            <tag name="data_collector" template="@WebProfiler/Collector/messenger.html.twig" id="messenger" priority="100" />
         </service>
 
         <!-- Discovery -->
@@ -61,8 +57,7 @@
         </service>
 
         <service id="messenger.transport.amqp.factory" class="Symfony\Component\Messenger\Transport\AmqpExt\AmqpTransportFactory">
-            <argument type="service" id="messenger.transport.encoder" />
-            <argument type="service" id="messenger.transport.decoder" />
+            <argument type="service" id="messenger.transport.serializer" />
             <argument>%kernel.debug%</argument>
 
             <tag name="messenger.transport_factory" />

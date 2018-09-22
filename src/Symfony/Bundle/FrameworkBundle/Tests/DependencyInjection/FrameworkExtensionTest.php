@@ -423,6 +423,9 @@ abstract class FrameworkExtensionTest extends TestCase
         $this->assertTrue($container->hasDefinition('session'), '->registerSessionConfiguration() loads session.xml');
         $this->assertNull($container->getDefinition('session.storage.native')->getArgument(1));
         $this->assertNull($container->getDefinition('session.storage.php_bridge')->getArgument(0));
+
+        $expected = array('session', 'initialized_session');
+        $this->assertEquals($expected, array_keys($container->getDefinition('session_listener')->getArgument(0)->getValues()));
     }
 
     public function testRequest()
@@ -530,6 +533,7 @@ abstract class FrameworkExtensionTest extends TestCase
     {
         $container = $this->createContainerFromFile('messenger');
         $this->assertTrue($container->hasAlias('message_bus'));
+        $this->assertTrue($container->getAlias('message_bus')->isPublic());
         $this->assertFalse($container->hasDefinition('messenger.transport.amqp.factory'));
         $this->assertTrue($container->hasDefinition('messenger.transport_factory'));
         $this->assertSame(TransportFactory::class, $container->getDefinition('messenger.transport_factory')->getClass());
@@ -600,10 +604,9 @@ abstract class FrameworkExtensionTest extends TestCase
     {
         $container = $this->createContainerFromFile('messenger_transport');
 
-        $this->assertSame('messenger.transport.serializer', (string) $container->getAlias('messenger.transport.encoder'));
-        $this->assertSame('messenger.transport.serializer', (string) $container->getAlias('messenger.transport.decoder'));
+        $this->assertSame('messenger.transport.symfony_serializer', (string) $container->getAlias('messenger.transport.serializer'));
 
-        $serializerTransportDefinition = $container->getDefinition('messenger.transport.serializer');
+        $serializerTransportDefinition = $container->getDefinition('messenger.transport.symfony_serializer');
         $this->assertSame('csv', $serializerTransportDefinition->getArgument(1));
         $this->assertSame(array('enable_max_depth' => true), $serializerTransportDefinition->getArgument(2));
     }
@@ -696,20 +699,6 @@ abstract class FrameworkExtensionTest extends TestCase
 
         $calls = $container->getDefinition('translator.default')->getMethodCalls();
         $this->assertEquals(array('en', 'fr'), $calls[1][1][0]);
-    }
-
-    public function testTranslatorHelperIsRegisteredWhenTranslatorIsEnabled()
-    {
-        $container = $this->createContainerFromFile('templating_php_translator_enabled');
-
-        $this->assertTrue($container->has('templating.helper.translator'));
-    }
-
-    public function testTranslatorHelperIsNotRegisteredWhenTranslatorIsDisabled()
-    {
-        $container = $this->createContainerFromFile('templating_php_translator_disabled');
-
-        $this->assertFalse($container->has('templating.helper.translator'));
     }
 
     /**
@@ -1240,6 +1229,14 @@ abstract class FrameworkExtensionTest extends TestCase
         $this->assertSame('setLogger', $calls[0][0], 'Method name should be "setLogger"');
         $this->assertInstanceOf(Reference::class, $calls[0][1][0]);
         $this->assertSame('logger', (string) $calls[0][1][0], 'Argument should be a reference to "logger"');
+    }
+
+    public function testSessionCookieSecureAuto()
+    {
+        $container = $this->createContainerFromFile('session_cookie_secure_auto');
+
+        $expected = array('session', 'initialized_session', 'session_storage', 'request_stack');
+        $this->assertEquals($expected, array_keys($container->getDefinition('session_listener')->getArgument(0)->getValues()));
     }
 
     protected function createContainer(array $data = array())

@@ -1,6 +1,11 @@
 UPGRADE FROM 4.x to 5.0
 =======================
 
+BrowserKit
+----------
+
+ * The `Client::submit()` method has a new `$serverParameters` argument.
+
 Cache
 -----
 
@@ -49,10 +54,20 @@ DoctrineBridge
  * Deprecated injecting `ClassMetadataFactory` in `DoctrineExtractor`, an instance of `EntityManagerInterface` should be
    injected instead
 
+DomCrawler
+----------
+
+ * The `Crawler::children()` method has a new `$selector` argument.
+
 EventDispatcher
 ---------------
 
  * The `TraceableEventDispatcherInterface` has been removed.
+
+Finder
+------
+
+ * The `Finder::sortByName()` method has a new `$useNaturalSort` argument.
 
 FrameworkBundle
 ---------------
@@ -91,6 +106,10 @@ FrameworkBundle
  * Removed `Symfony\Bundle\FrameworkBundle\Controller\ControllerNameParser`.
  * Warming up a router in `RouterCacheWarmer` that does not implement the `WarmableInterface` is not supported anymore.
  * The `RequestDataCollector` class has been removed. Use the `Symfony\Component\HttpKernel\DataCollector\RequestDataCollector` class instead.
+ * Removed `Symfony\Bundle\FrameworkBundle\Controller\Controller`. Use `Symfony\Bundle\FrameworkBundle\Controller\AbstractController` instead.
+ * Added support for the SameSite attribute for session cookies. It is highly recommended to set this setting (`framework.session.cookie_samesite`) to `lax` for increased security against CSRF attacks.
+ * The `ContainerAwareCommand` class has been removed, use `Symfony\Component\Console\Command\Command`
+   with dependency injection instead.
 
 HttpFoundation
 --------------
@@ -98,6 +117,11 @@ HttpFoundation
  * The `$size` argument of the `UploadedFile` constructor has been removed.
  * The `getClientSize()` method of the `UploadedFile` class has been removed.
  * The `getSession()` method of the `Request` class throws an exception when session is null.
+
+Monolog
+-------
+
+ * The methods `DebugProcessor::getLogs()`, `DebugProcessor::countErrors()`, `Logger::getLogs()` and `Logger::countErrors()` have a new `$request` argument.
 
 Process
 -------
@@ -140,11 +164,18 @@ SecurityBundle
  * The `security.authentication.trust_resolver.anonymous_class` parameter has been removed.
  * The `security.authentication.trust_resolver.rememberme_class` parameter has been removed.
 
+Serializer
+----------
+
+ * The `AbstractNormalizer::handleCircularReference()` method has two new `$format` and `$context` arguments.
+
 Translation
 -----------
 
  * The `FileDumper::setBackup()` method has been removed.
  * The `TranslationWriter::disableBackup()` method has been removed.
+ * The `TranslatorInterface` has been removed in favor of `Symfony\Contracts\Translation\TranslatorInterface`
+ * The `MessageSelector`, `Interval` and `PluralizationRules` classes have been removed, use `IdentityTranslator` instead
 
 TwigBundle
 ----------
@@ -157,6 +188,9 @@ Validator
  * The `Email::__construct()` 'strict' property has been removed. Use 'mode'=>"strict" instead.
  * Calling `EmailValidator::__construct()` method with a boolean parameter has been removed, use `EmailValidator("strict")` instead.
  * Removed the `checkDNS` and `dnsMessage` options from the `Url` constraint.
+ * The component is now decoupled from `symfony/translation` and uses `Symfony\Contracts\Translation\TranslatorInterface` instead
+ * The `ValidatorBuilderInterface` has been removed and `ValidatorBuilder` is now final
+ * Removed support for validating instances of `\DateTimeInterface` in `DateTimeValidator`, `DateValidator` and `TimeValidator`. Use `Type` instead or remove the constraint if the underlying model is type hinted to `\DateTimeInterface` already.
 
 Workflow
 --------

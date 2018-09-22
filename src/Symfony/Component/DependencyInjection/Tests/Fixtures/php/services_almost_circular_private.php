@@ -19,11 +19,6 @@ class Symfony_DI_PhpDumper_Test_Almost_Circular_Private extends Container
     private $parameters;
     private $targetDirs = array();
 
-    /**
-     * @internal but protected for BC on cache:clear
-     */
-    protected $privates = array();
-
     public function __construct()
     {
         $this->services = $this->privates = array();
@@ -43,12 +38,6 @@ class Symfony_DI_PhpDumper_Test_Almost_Circular_Private extends Container
         );
 
         $this->aliases = array();
-    }
-
-    public function reset()
-    {
-        $this->privates = array();
-        parent::reset();
     }
 
     public function compile()
@@ -125,6 +114,7 @@ class Symfony_DI_PhpDumper_Test_Almost_Circular_Private extends Container
         $this->services['connection'] = $instance = new \stdClass($a, $b);
 
         $a->subscriber = ($this->services['subscriber'] ?? $this->getSubscriberService());
+
         $b->logger = ($this->services['logger'] ?? $this->getLoggerService());
 
         return $instance;
@@ -139,17 +129,19 @@ class Symfony_DI_PhpDumper_Test_Almost_Circular_Private extends Container
     {
         $a = new \stdClass();
 
-        $b = new \stdClass();
+        $c = new \stdClass();
 
-        $this->services['connection2'] = $instance = new \stdClass($a, $b);
+        $this->services['connection2'] = $instance = new \stdClass($a, $c);
 
-        $c = ($this->services['manager2'] ?? $this->getManager2Service());
+        $b = ($this->services['manager2'] ?? $this->getManager2Service());
+
+        $a->subscriber2 = new \stdClass($b);
 
         $d = new \stdClass($instance);
 
-        $a->subscriber2 = new \stdClass($c);
-        $d->handler2 = new \stdClass($c);
-        $b->logger2 = $d;
+        $d->handler2 = new \stdClass($b);
+
+        $c->logger2 = $d;
 
         return $instance;
     }

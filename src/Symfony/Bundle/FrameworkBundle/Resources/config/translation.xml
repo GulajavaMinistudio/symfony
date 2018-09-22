@@ -21,6 +21,7 @@
             </call>
         </service>
         <service id="Symfony\Component\Translation\TranslatorInterface" alias="translator" />
+        <service id="Symfony\Contracts\Translation\TranslatorInterface" alias="translator" />
 
         <service id="translator.logging" class="Symfony\Component\Translation\LoggingTranslator">
             <argument type="service" id="translator.logging.inner" />
@@ -28,9 +29,15 @@
             <tag name="monolog.logger" channel="translation" />
         </service>
 
-        <service id="translator.formatter.default" class="Symfony\Component\Translation\Formatter\MessageFormatter">
-            <argument type="service" id="translator.selector" />
+        <service id="translator.formatter.symfony" class="Symfony\Component\Translation\Formatter\MessageFormatter">
+            <argument type="service" id="identity_translator" />
         </service>
+        <service id="translator.formatter.intl" class="Symfony\Component\Translation\Formatter\IntlMessageFormatter" public="false" />
+        <service id="translator.formatter.fallback" class="Symfony\Component\Translation\Formatter\FallbackFormatter" public="false">
+            <argument type="service" id="translator.formatter.intl" />
+            <argument type="service" id="translator.formatter.symfony" />
+        </service>
+        <service id="translator.formatter.default" alias="translator.formatter.fallback" />
 
         <service id="translation.loader.php" class="Symfony\Component\Translation\Loader\PhpFileLoader">
             <tag name="translation.loader" alias="php" />

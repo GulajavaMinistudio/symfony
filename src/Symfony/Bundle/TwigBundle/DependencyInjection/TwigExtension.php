@@ -19,6 +19,7 @@ use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Loader\XmlFileLoader;
 use Symfony\Component\DependencyInjection\Reference;
 use Symfony\Component\HttpKernel\DependencyInjection\Extension;
+use Symfony\Component\Translation\Translator;
 use Twig\Extension\ExtensionInterface;
 use Twig\Extension\RuntimeExtensionInterface;
 use Twig\Loader\LoaderInterface;
@@ -48,7 +49,7 @@ class TwigExtension extends Extension
             $loader->load('console.xml');
         }
 
-        if (!interface_exists('Symfony\Component\Translation\TranslatorInterface')) {
+        if (!class_exists(Translator::class)) {
             $container->removeDefinition('twig.translation.extractor');
         }
 
@@ -152,6 +153,11 @@ class TwigExtension extends Extension
         $container->registerForAutoconfiguration(ExtensionInterface::class)->addTag('twig.extension');
         $container->registerForAutoconfiguration(LoaderInterface::class)->addTag('twig.loader');
         $container->registerForAutoconfiguration(RuntimeExtensionInterface::class)->addTag('twig.runtime');
+
+        if (false === $config['cache']) {
+            $container->removeDefinition('twig.cache_warmer');
+            $container->removeDefinition('twig.template_cache_warmer');
+        }
     }
 
     private function getBundleTemplatePaths(ContainerBuilder $container, array $config)

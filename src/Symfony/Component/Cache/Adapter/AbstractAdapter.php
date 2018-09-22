@@ -15,12 +15,12 @@ use Psr\Cache\CacheItemInterface;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
-use Symfony\Component\Cache\CacheInterface;
 use Symfony\Component\Cache\CacheItem;
 use Symfony\Component\Cache\Exception\InvalidArgumentException;
 use Symfony\Component\Cache\ResettableInterface;
 use Symfony\Component\Cache\Traits\AbstractTrait;
 use Symfony\Component\Cache\Traits\GetTrait;
+use Symfony\Contracts\Cache\CacheInterface;
 
 /**
  * @author Nicolas Grekas <p@tchwork.com>
@@ -64,7 +64,7 @@ abstract class AbstractAdapter implements AdapterInterface, CacheInterface, Logg
             null,
             CacheItem::class
         );
-        $getId = function ($key) { return $this->getId((string) $key); };
+        $getId = \Closure::fromCallable(array($this, 'getId'));
         $this->mergeByLifetime = \Closure::bind(
             function ($deferred, $namespace, &$expiredIds) use ($getId) {
                 $byLifetime = array();
@@ -72,6 +72,7 @@ abstract class AbstractAdapter implements AdapterInterface, CacheInterface, Logg
                 $expiredIds = array();
 
                 foreach ($deferred as $key => $item) {
+                    $key = (string) $key;
                     if (null === $item->expiry) {
                         $ttl = 0 < $item->defaultLifetime ? $item->defaultLifetime : 0;
                     } elseif (0 >= $ttl = (int) ($item->expiry - $now)) {

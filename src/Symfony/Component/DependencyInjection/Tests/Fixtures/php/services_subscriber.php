@@ -19,11 +19,6 @@ class ProjectServiceContainer extends Container
     private $parameters;
     private $targetDirs = array();
 
-    /**
-     * @internal but protected for BC on cache:clear
-     */
-    protected $privates = array();
-
     public function __construct()
     {
         $this->services = $this->privates = array();
@@ -33,12 +28,6 @@ class ProjectServiceContainer extends Container
         );
 
         $this->aliases = array();
-    }
-
-    public function reset()
-    {
-        $this->privates = array();
-        parent::reset();
     }
 
     public function compile()
@@ -54,8 +43,8 @@ class ProjectServiceContainer extends Container
     public function getRemovedIds()
     {
         return array(
-            '.service_locator.ljJrY4L' => true,
-            '.service_locator.ljJrY4L.foo_service' => true,
+            '.service_locator.nZQiwdg' => true,
+            '.service_locator.nZQiwdg.foo_service' => true,
             'Psr\\Container\\ContainerInterface' => true,
             'Symfony\\Component\\DependencyInjection\\ContainerInterface' => true,
             'Symfony\\Component\\DependencyInjection\\Tests\\Fixtures\\CustomDefinition' => true,

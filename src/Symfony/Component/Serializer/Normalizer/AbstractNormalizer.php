@@ -124,10 +124,7 @@ abstract class AbstractNormalizer implements NormalizerInterface, DenormalizerIn
     {
         foreach ($callbacks as $attribute => $callback) {
             if (!\is_callable($callback)) {
-                throw new InvalidArgumentException(sprintf(
-                    'The given callback for attribute "%s" is not callable.',
-                    $attribute
-                ));
+                throw new InvalidArgumentException(sprintf('The given callback for attribute "%s" is not callable.', $attribute));
             }
         }
         $this->callbacks = $callbacks;
@@ -202,6 +199,9 @@ abstract class AbstractNormalizer implements NormalizerInterface, DenormalizerIn
      */
     protected function handleCircularReference($object/*, string $format = null, array $context = array()*/)
     {
+        if (\func_num_args() < 2 && __CLASS__ !== \get_class($this) && __CLASS__ !== (new \ReflectionMethod($this, __FUNCTION__))->getDeclaringClass()->getName() && !$this instanceof \PHPUnit\Framework\MockObject\MockObject && !$this instanceof \Prophecy\Prophecy\ProphecySubjectInterface) {
+            @trigger_error(sprintf('The "%s()" method will have two new "string $format = null" and "array $context = array()" arguments in version 5.0, not defining it is deprecated since Symfony 4.2.', __METHOD__), E_USER_DEPRECATED);
+        }
         $format = \func_num_args() > 1 ? func_get_arg(1) : null;
         $context = \func_num_args() > 2 ? func_get_arg(2) : array();
 
@@ -348,7 +348,7 @@ abstract class AbstractNormalizer implements NormalizerInterface, DenormalizerIn
             $params = array();
             foreach ($constructorParameters as $constructorParameter) {
                 $paramName = $constructorParameter->name;
-                $key = $this->nameConverter ? $this->nameConverter->normalize($paramName) : $paramName;
+                $key = $this->nameConverter ? $this->nameConverter->normalize($paramName, $class, $format, $context) : $paramName;
 
                 $allowed = false === $allowedAttributes || \in_array($paramName, $allowedAttributes);
                 $ignored = !$this->isAllowedAttribute($class, $paramName, $format, $context);
@@ -393,13 +393,7 @@ abstract class AbstractNormalizer implements NormalizerInterface, DenormalizerIn
                 } elseif ($constructorParameter->isDefaultValueAvailable()) {
                     $params[] = $constructorParameter->getDefaultValue();
                 } else {
-                    throw new MissingConstructorArgumentsException(
-                        sprintf(
-                            'Cannot create an instance of %s from serialized data because its constructor requires parameter "%s" to be present.',
-                            $class,
-                            $constructorParameter->name
-                        )
-                    );
+                    throw new MissingConstructorArgumentsException(sprintf('Cannot create an instance of %s from serialized data because its constructor requires parameter "%s" to be present.', $class, $constructorParameter->name));
                 }
             }
 

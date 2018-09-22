@@ -189,8 +189,8 @@ XML;
     public function testEncodeScalarRootAttributes()
     {
         $array = array(
-          '#' => 'Paul',
-          '@gender' => 'm',
+            '#' => 'Paul',
+            '@gender' => 'm',
         );
 
         $expected = '<?xml version="1.0"?>'."\n".
@@ -202,8 +202,8 @@ XML;
     public function testEncodeRootAttributes()
     {
         $array = array(
-          'firstname' => 'Paul',
-          '@gender' => 'm',
+            'firstname' => 'Paul',
+            '@gender' => 'm',
         );
 
         $expected = '<?xml version="1.0"?>'."\n".
@@ -215,7 +215,7 @@ XML;
     public function testEncodeCdataWrapping()
     {
         $array = array(
-          'firstname' => 'Paul <or Me>',
+            'firstname' => 'Paul <or Me>',
         );
 
         $expected = '<?xml version="1.0"?>'."\n".
@@ -758,6 +758,43 @@ XML;
         $actualXml = $xmlEncoder->encode(array('foo' => array('@dateTime' => new \DateTime($this->exampleDateTimeString))), 'xml');
 
         $this->assertEquals($this->createXmlWithDateTimeField(), $actualXml);
+    }
+
+    public function testEncodeComment()
+    {
+        $expected = <<<'XML'
+<?xml version="1.0"?>
+<response><!-- foo --></response>
+
+XML;
+
+        $data = array('#comment' => ' foo ');
+
+        $this->assertEquals($expected, $this->encoder->encode($data, 'xml'));
+    }
+
+    public function testEncodeWithoutPI()
+    {
+        $encoder = new XmlEncoder('response', null, array(), array(XML_PI_NODE));
+
+        $expected = '<response/>';
+
+        $this->assertEquals($expected, $encoder->encode(array(), 'xml'));
+    }
+
+    public function testEncodeWithoutComment()
+    {
+        $encoder = new XmlEncoder('response', null, array(), array(XML_COMMENT_NODE));
+
+        $expected = <<<'XML'
+<?xml version="1.0"?>
+<response/>
+
+XML;
+
+        $data = array('#comment' => ' foo ');
+
+        $this->assertEquals($expected, $encoder->encode($data, 'xml'));
     }
 
     /**

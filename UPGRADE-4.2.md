@@ -1,6 +1,11 @@
 UPGRADE FROM 4.1 to 4.2
 =======================
 
+BrowserKit
+----------
+
+ * The `Client::submit()` method will have a new `$serverParameters` argument in version 5.0, not defining it is deprecated.
+
 Cache
 -----
 
@@ -37,19 +42,29 @@ DoctrineBridge
  * The `lazy` attribute on `doctrine.event_listener` tags was removed.
    Listeners are now lazy by default. So any `lazy` attributes can safely be removed from those tags.
 
+DomCrawler
+----------
+
+ * The `Crawler::children()` method will have a new `$selector` argument in version 5.0, not defining it is deprecated.
+
+Finder
+------
+
+ * The `Finder::sortByName()` method will have a new `$useNaturalSort` argument in version 5.0, not defining it is deprecated.
+
 Form
 ----
 
  * Deprecated calling `FormRenderer::searchAndRenderBlock` for fields which were already rendered.
    Instead of expecting such calls to return empty strings, check if the field has already been rendered.
- 
+
    Before:
    ```twig
    {% for field in fieldsWithPotentialDuplicates %}
       {{ form_widget(field) }}
    {% endfor %}
    ```
-   
+
    After:
    ```twig
    {% for field in fieldsWithPotentialDuplicates if not field.rendered %}
@@ -83,11 +98,72 @@ FrameworkBundle
    is UTF-8 (see kernel's `getCharset()` method), it is recommended to set it to `true`:
    this will generate 404s for non-UTF-8 URLs, which are incompatible with you app anyway,
    and will allow dumping optimized routers and using Unicode classes in requirements.
+ * Added support for the SameSite attribute for session cookies. It is highly recommended to set this setting (`framework.session.cookie_samesite`) to `lax` for increased security against CSRF attacks.
+ * The `Controller` class has been deprecated, use `AbstractController` instead.
+ * The Messenger encoder/decoder configuration has been changed for a unified Messenger serializer configuration.
+ 
+   Before:
+   ```yaml
+   framework:
+       messenger:
+           encoder: your_encoder_service_id
+           decoder: your_decoder_service_id
+   ```
+
+   After:
+   ```yaml
+   framework:
+       messenger:
+           serializer:
+               id: your_messenger_service_id
+   ```
+ * The `ContainerAwareCommand` class has been deprecated, use `Symfony\Component\Console\Command\Command`
+   with dependency injection instead.
 
 Messenger
 ---------
 
+ * `EnvelopeItemInterface` doesn't extend `Serializable` anymore
  * The `handle` method of the `Symfony\Component\Messenger\Middleware\ValidationMiddleware` and `Symfony\Component\Messenger\Asynchronous\Middleware\SendMessageMiddleware` middlewares now requires an `Envelope` object to be given (because they implement the `EnvelopeAwareInterface`). When using these middleware with the provided `MessageBus`, you will not have to do anything. If you use the middlewares any other way, you can use `Envelope::wrap($message)` to create an envelope for your message.
+ * `MessageSubscriberInterface::getHandledMessages()` return value has changed. The value of an array item
+   needs to be an associative array or the method name. 
+   
+   Before:
+   ```php
+   return [
+      [FirstMessage::class, 0],
+      [SecondMessage::class, -10],
+   ];
+   ```
+   
+   After:
+   ```php
+   yield FirstMessage::class => ['priority' => 0];
+   yield SecondMessage::class => ['priority => -10];
+   ```
+   
+   Before:
+   ```php
+   return [
+       SecondMessage::class => ['secondMessageMethod', 20],
+   ];
+   ```
+   
+   After:
+   ```php
+   yield SecondMessage::class => [
+       'method' => 'secondMessageMethod',
+       'priority' => 20,
+   ];
+   ```
+ * The `EncoderInterface` and `DecoderInterface` interfaces have been replaced by a unified `Symfony\Component\Messenger\Transport\Serialization\SerializerInterface`.
+   Each interface method have been merged untouched into the `Serializer` interface, so you can simply merge your two implementations together and implement the new interface.
+ 
+
+Monolog
+-------
+
+ * The methods `DebugProcessor::getLogs()`, `DebugProcessor::countErrors()`, `Logger::getLogs()` and `Logger::countErrors()` will have a new `$request` argument in version 5.0, not defining it is deprecated.
 
 Security
 --------
@@ -115,5 +191,19 @@ SecurityBundle
 Serializer
 ----------
 
- * Relying on the default value (false) of the "as_collection" option is deprecated since 4.2.
+ * Relying on the default value (false) of the "as_collection" option is deprecated.
    You should set it to false explicitly instead as true will be the default value in 5.0.
+ * The `AbstractNormalizer::handleCircularReference()` method will have two new `$format` and `$context` arguments in version 5.0, not defining them is deprecated.
+
+Translation
+-----------
+
+ * The `TranslatorInterface` has been deprecated in favor of `Symfony\Contracts\Translation\TranslatorInterface`
+ * The `MessageSelector`, `Interval` and `PluralizationRules` classes have been deprecated, use `IdentityTranslator` instead
+
+Validator
+---------
+
+ * The component is now decoupled from `symfony/translation` and uses `Symfony\Contracts\Translation\TranslatorInterface` instead
+ * The `ValidatorBuilderInterface` has been deprecated and `ValidatorBuilder` made final
+ * Deprecated validating instances of `\DateTimeInterface` in `DateTimeValidator`, `DateValidator` and `TimeValidator`. Use `Type` instead or remove the constraint if the underlying model is type hinted to `\DateTimeInterface` already.

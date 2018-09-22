@@ -618,10 +618,10 @@ class ContainerBuilder extends Container implements TaggedContainerInterface
      * the parameters passed to the container constructor to have precedence
      * over the loaded ones.
      *
-     * $container = new ContainerBuilder(new ParameterBag(array('foo' => 'bar')));
-     * $loader = new LoaderXXX($container);
-     * $loader->load('resource_name');
-     * $container->register('foo', 'stdClass');
+     *     $container = new ContainerBuilder(new ParameterBag(array('foo' => 'bar')));
+     *     $loader = new LoaderXXX($container);
+     *     $loader->load('resource_name');
+     *     $container->register('foo', 'stdClass');
      *
      * In the above example, even if the loaded resource defines a foo
      * parameter, the value will still be 'bar' as defined in the ContainerBuilder
@@ -1114,7 +1114,7 @@ class ContainerBuilder extends Container implements TaggedContainerInterface
         }
 
         if (null !== $factory) {
-            $service = \call_user_func_array($factory, $arguments);
+            $service = $factory(...$arguments);
 
             if (!$definition->isDeprecated() && \is_array($factory) && \is_string($factory[0])) {
                 $r = new \ReflectionClass($factory[0]);
@@ -1253,14 +1253,14 @@ class ContainerBuilder extends Container implements TaggedContainerInterface
      *
      * Example:
      *
-     * $container->register('foo')->addTag('my.tag', array('hello' => 'world'));
+     *     $container->register('foo')->addTag('my.tag', array('hello' => 'world'));
      *
-     * $serviceIds = $container->findTaggedServiceIds('my.tag');
-     * foreach ($serviceIds as $serviceId => $tags) {
-     *     foreach ($tags as $tag) {
-     *         echo $tag['hello'];
+     *     $serviceIds = $container->findTaggedServiceIds('my.tag');
+     *     foreach ($serviceIds as $serviceId => $tags) {
+     *         foreach ($tags as $tag) {
+     *             echo $tag['hello'];
+     *         }
      *     }
-     * }
      *
      * @param string $name
      * @param bool   $throwOnAbstract
@@ -1335,6 +1335,25 @@ class ContainerBuilder extends Container implements TaggedContainerInterface
         }
 
         return $this->autoconfiguredInstanceof[$interface];
+    }
+
+    /**
+     * Registers an autowiring alias that only binds to a specific argument name.
+     *
+     * The argument name is derived from $name if provided (from $id otherwise)
+     * using camel case: "foo.bar" or "foo_bar" creates an alias bound to
+     * "$fooBar"-named arguments with $type as type-hint. Such arguments will
+     * receive the service $id when autowiring is used.
+     */
+    public function registerAliasForArgument(string $id, string $type, string $name = null): Alias
+    {
+        $name = lcfirst(str_replace(' ', '', ucwords(preg_replace('/[^a-zA-Z0-9\x7f-\xff]++/', ' ', $name ?? $id))));
+
+        if (!preg_match('/^[a-zA-Z_\x7f-\xff]/', $name)) {
+            throw new InvalidArgumentException(sprintf('Invalid argument name "%s" for service "%s": the first character must be a letter.', $name, $id));
+        }
+
+        return $this->setAlias($type.' $'.$name, $id);
     }
 
     /**
@@ -1544,7 +1563,7 @@ class ContainerBuilder extends Container implements TaggedContainerInterface
             }
         }
 
-        \call_user_func_array(array($service, $call[0]), $this->doResolveServices($this->getParameterBag()->unescapeValue($this->getParameterBag()->resolveValue($call[1])), $inlineServices));
+        $service->{$call[0]}(...$this->doResolveServices($this->getParameterBag()->unescapeValue($this->getParameterBag()->resolveValue($call[1])), $inlineServices));
     }
 
     /**

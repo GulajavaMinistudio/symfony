@@ -399,8 +399,8 @@ class PhpDumperTest extends TestCase
         $container->compile(true);
 
         $expected = array(
-          'env(foo)' => 'd29ybGQ=',
-          'hello' => 'world',
+            'env(foo)' => 'd29ybGQ=',
+            'hello' => 'world',
         );
         $this->assertSame($expected, $container->getParameterBag()->all());
     }
@@ -885,6 +885,28 @@ class PhpDumperTest extends TestCase
         yield array('private');
     }
 
+    public function testDeepServiceGraph()
+    {
+        $container = new ContainerBuilder();
+
+        $loader = new YamlFileLoader($container, new FileLocator(self::$fixturesPath.'/yaml'));
+        $loader->load('services_deep_graph.yml');
+
+        $container->compile();
+
+        $dumper = new PhpDumper($container);
+        $dumper->dump();
+
+        $this->assertStringEqualsFile(self::$fixturesPath.'/php/services_deep_graph.php', $dumper->dump(array('class' => 'Symfony_DI_PhpDumper_Test_Deep_Graph')));
+
+        require self::$fixturesPath.'/php/services_deep_graph.php';
+
+        $container = new \Symfony_DI_PhpDumper_Test_Deep_Graph();
+
+        $this->assertInstanceOf(FooForDeepGraph::class, $container->get('foo'));
+        $this->assertEquals((object) array('p2' => (object) array('p3' => (object) array())), $container->get('foo')->bClone);
+    }
+
     public function testHotPathOptimizations()
     {
         $container = include self::$fixturesPath.'/containers/container_inline_requires.php';
@@ -1063,5 +1085,16 @@ class Rot13EnvVarProcessor implements EnvVarProcessorInterface
     public static function getProvidedTypes()
     {
         return array('rot13' => 'string');
+    }
+}
+
+class FooForDeepGraph
+{
+    public $bClone;
+
+    public function __construct(\stdClass $a, \stdClass $b)
+    {
+        // clone to verify that $b has been fully initialized before
+        $this->bClone = clone $b;
     }
 }

@@ -8,7 +8,12 @@ CHANGELOG
  * Allowed configuring PDO-based cache pools via a new `cache.adapter.pdo` abstract service
  * Deprecated auto-injection of the container in AbstractController instances, register them as service subscribers instead
  * Deprecated processing of services tagged `security.expression_language_provider` in favor of a new `AddExpressionLanguageProvidersPass` in SecurityBundle.
+ * Deprecated the `Symfony\Bundle\FrameworkBundle\Controller\Controller` class in favor of `Symfony\Bundle\FrameworkBundle\Controller\AbstractController`.
  * Enabled autoconfiguration for `Psr\Log\LoggerAwareInterface`
+ * Added new "auto" mode for `framework.session.cookie_secure` to turn it on when HTTPS is used
+ * Removed the `framework.messenger.encoder` and `framework.messenger.decoder` options. Use the `framework.messenger.serializer.id` option to replace the Messenger serializer. 
+ * Deprecated the `ContainerAwareCommand` class in favor of `Symfony\Component\Console\Command\Command`
+ * Made `debug:container` and `debug:autowiring` ignore backslashes in service ids
 
 4.1.0
 -----
@@ -27,6 +32,7 @@ CHANGELOG
  * Deprecated `Symfony\Bundle\FrameworkBundle\Controller\ControllerNameParser`
  * The `container.service_locator` tag of `ServiceLocator`s is now autoconfigured.
  * Add the ability to search a route in `debug:router`.
+ * Add the ability to use SameSite cookies for sessions.
 
 4.0.0
 -----

@@ -144,7 +144,7 @@ class YamlFileLoader extends FileLoader
 
         // services
         $this->anonymousServicesCount = 0;
-        $this->anonymousServicesSuffix = ContainerBuilder::hash($path);
+        $this->anonymousServicesSuffix = '~'.ContainerBuilder::hash($path);
         $this->setCurrentDir(\dirname($path));
         try {
             $this->parseDefinitions($content, $path);
@@ -376,6 +376,10 @@ class YamlFileLoader extends FileLoader
                 if (!isset($service[$k])) {
                     throw new InvalidArgumentException(sprintf('Attribute "%s" on service "%s" cannot be inherited from "_defaults" when a "parent" is set. Move your child definitions to a separate file or define this attribute explicitly.', $k, $id));
                 }
+            }
+
+            if ('' !== $service['parent'] && '@' === $service['parent'][0]) {
+                throw new InvalidArgumentException(sprintf('The value of the "parent" option for the "%s" service must be the id of the service without the "@" prefix (replace "%s" with "%s").', $id, $service['parent'], substr($service['parent'], 1)));
             }
 
             $definition = new ChildDefinition($service['parent']);
@@ -659,13 +663,7 @@ class YamlFileLoader extends FileLoader
 
             if (!$this->container->hasExtension($namespace)) {
                 $extensionNamespaces = array_filter(array_map(function (ExtensionInterface $ext) { return $ext->getAlias(); }, $this->container->getExtensions()));
-                throw new InvalidArgumentException(sprintf(
-                    'There is no extension able to load the configuration for "%s" (in %s). Looked for namespace "%s", found %s',
-                    $namespace,
-                    $file,
-                    $namespace,
-                    $extensionNamespaces ? sprintf('"%s"', implode('", "', $extensionNamespaces)) : 'none'
-                ));
+                throw new InvalidArgumentException(sprintf('There is no extension able to load the configuration for "%s" (in %s). Looked for namespace "%s", found %s', $namespace, $file, $namespace, $extensionNamespaces ? sprintf('"%s"', implode('", "', $extensionNamespaces)) : 'none'));
             }
         }
 
