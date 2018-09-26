@@ -4,8 +4,10 @@ CHANGELOG
 4.2.0
 -----
 
+ * deprecated the `$scale` argument of the `IntegerToLocalizedStringTransformer`
  * added `Symfony\Component\Form\ClearableErrorsInterface`
  * deprecated calling `FormRenderer::searchAndRenderBlock` for fields which were already rendered
+ * deprecated the `scale` option of the `IntegerType`
 
 4.1.0
 -----

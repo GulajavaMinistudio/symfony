@@ -69,6 +69,12 @@ Finder
 
  * The `Finder::sortByName()` method has a new `$useNaturalSort` argument.
 
+Form
+----
+
+ * The `scale` option was removed from the `IntegerType`.
+ * The `$scale` argument of the `IntegerToLocalizedStringTransformer` was removed.
+
 FrameworkBundle
 ---------------
 

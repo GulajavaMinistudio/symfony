@@ -55,6 +55,9 @@ Finder
 Form
 ----
 
+ * The `scale` option of the `IntegerType` is deprecated.
+ * The `$scale` argument of the `IntegerToLocalizedStringTransformer` is deprecated.
+
  * Deprecated calling `FormRenderer::searchAndRenderBlock` for fields which were already rendered.
    Instead of expecting such calls to return empty strings, check if the field has already been rendered.
 
@@ -70,25 +73,6 @@ Form
    {% for field in fieldsWithPotentialDuplicates if not field.rendered %}
       {{ form_widget(field) }}
    {% endfor %}
-   ```
-
-Process
--------
-
- * Deprecated the `Process::setCommandline()` and the `PhpProcess::setPhpBinary()` methods.
- * Deprecated passing commands as strings when creating a `Process` instance.
-
-   Before:
-   ```php
-   $process = new Process('ls -l');
-   ```
-
-   After:
-   ```php
-   $process = new Process(array('ls', '-l'));
-
-   // alternatively, when a shell wrapper is required
-   $process = Process::fromShellCommandline('ls -l');
    ```
 
 FrameworkBundle
@@ -163,6 +147,25 @@ Monolog
 -------
 
  * The methods `DebugProcessor::getLogs()`, `DebugProcessor::countErrors()`, `Logger::getLogs()` and `Logger::countErrors()` will have a new `$request` argument in version 5.0, not defining it is deprecated.
+
+Process
+-------
+
+ * Deprecated the `Process::setCommandline()` and the `PhpProcess::setPhpBinary()` methods.
+ * Deprecated passing commands as strings when creating a `Process` instance.
+
+   Before:
+   ```php
+   $process = new Process('ls -l');
+   ```
+
+   After:
+   ```php
+   $process = new Process(array('ls', '-l'));
+
+   // alternatively, when a shell wrapper is required
+   $process = Process::fromShellCommandline('ls -l');
+   ```
 
 Security
 --------
