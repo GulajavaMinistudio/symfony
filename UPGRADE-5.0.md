@@ -116,6 +116,10 @@ FrameworkBundle
  * Added support for the SameSite attribute for session cookies. It is highly recommended to set this setting (`framework.session.cookie_samesite`) to `lax` for increased security against CSRF attacks.
  * The `ContainerAwareCommand` class has been removed, use `Symfony\Component\Console\Command\Command`
    with dependency injection instead.
+ * The `--env` console option and its "-e" shortcut have been removed,
+   set the "APP_ENV" environment variable instead.
+ * The `--no-debug` console option has been removed, 
+   set the "APP_DEBUG" environment variable to "0" instead.
 
 HttpFoundation
 --------------
@@ -160,6 +164,9 @@ Security
    the 3rd one must be either a `LogoutListener` instance or `null`.
  * The `AuthenticationTrustResolver` constructor arguments have been removed.
  * A user object that is not an instance of `UserInterface` cannot be accessed from `Security::getUser()` anymore and returns `null` instead.
+ * `SimpleAuthenticatorInterface`, `SimpleFormAuthenticatorInterface`, `SimplePreAuthenticatorInterface`,
+   `SimpleAuthenticationProvider`, `SimpleAuthenticationHandler`, `SimpleFormAuthenticationListener` and
+   `SimplePreAuthenticationListener` have been removed. Use Guard instead.
 
 SecurityBundle
 --------------
@@ -171,6 +178,10 @@ SecurityBundle
    now throws a `\TypeError`, pass a `LogoutListener` instance instead.
  * The `security.authentication.trust_resolver.anonymous_class` parameter has been removed.
  * The `security.authentication.trust_resolver.rememberme_class` parameter has been removed.
+ * The `simple_form` and `simple_preauth` authentication listeners have been removed,
+   use Guard instead.
+ * The `SimpleFormFactory` and `SimplePreAuthenticationFactory` classes have been removed,
+   use Guard instead.
 
 Serializer
 ----------
@@ -184,6 +195,7 @@ Translation
  * The `TranslationWriter::disableBackup()` method has been removed.
  * The `TranslatorInterface` has been removed in favor of `Symfony\Contracts\Translation\TranslatorInterface`
  * The `MessageSelector`, `Interval` and `PluralizationRules` classes have been removed, use `IdentityTranslator` instead
+ * The `Translator::getFallbackLocales()` and `TranslationDataCollector::getFallbackLocales()` method are now internal
 
 TwigBundle
 ----------
@@ -199,7 +211,9 @@ Validator
  * The component is now decoupled from `symfony/translation` and uses `Symfony\Contracts\Translation\TranslatorInterface` instead
  * The `ValidatorBuilderInterface` has been removed and `ValidatorBuilder` is now final
  * Removed support for validating instances of `\DateTimeInterface` in `DateTimeValidator`, `DateValidator` and `TimeValidator`. Use `Type` instead or remove the constraint if the underlying model is type hinted to `\DateTimeInterface` already.
- * The `symfony/intl` component is now required for using the `Bic` constraint
+ * The `symfony/intl` component is now required for using the `Bic`, `Country`, `Currency`, `Language` and `Locale` constraints
+ * The `egulias/email-validator` component is now required for using the `Email` constraint
+ * The `symfony/expression-language` component is now required for using the `Expression` constraint
 
 Workflow
 --------

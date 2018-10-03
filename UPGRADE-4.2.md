@@ -110,6 +110,10 @@ FrameworkBundle
    ```
  * The `ContainerAwareCommand` class has been deprecated, use `Symfony\Component\Console\Command\Command`
    with dependency injection instead.
+ * The `--env` console option and its "-e" shortcut have been deprecated,
+   set the "APP_ENV" environment variable instead.
+ * The `--no-debug` console option has been deprecated,
+   set the "APP_DEBUG" environment variable to "0" instead.
 
 Messenger
 ---------
@@ -186,6 +190,9 @@ Security
    use custom tokens, extend the existing `Symfony\Component\Security\Core\Authentication\Token\AnonymousToken`
    or `Symfony\Component\Security\Core\Authentication\Token\RememberMeToken`.
  * Accessing the user object that is not an instance of `UserInterface` from `Security::getUser()` is deprecated.
+ * `SimpleAuthenticatorInterface`, `SimpleFormAuthenticatorInterface`, `SimplePreAuthenticatorInterface`,
+   `SimpleAuthenticationProvider`, `SimpleAuthenticationHandler`, `SimpleFormAuthenticationListener` and
+   `SimplePreAuthenticationListener` have been deprecated. Use Guard instead.
 
 SecurityBundle
 --------------
@@ -196,6 +203,10 @@ SecurityBundle
    `security.authentication.trust_resolver.rememberme_class` parameters to define
    the token classes is deprecated. To use
    custom tokens extend the existing AnonymousToken and RememberMeToken.
+ * The `simple_form` and `simple_preauth` authentication listeners have been deprecated,
+   use Guard instead.
+ * The `SimpleFormFactory` and `SimplePreAuthenticationFactory` classes have been deprecated,
+   use Guard instead.
 
 Serializer
 ----------
@@ -209,6 +220,7 @@ Translation
 
  * The `TranslatorInterface` has been deprecated in favor of `Symfony\Contracts\Translation\TranslatorInterface`
  * The `MessageSelector`, `Interval` and `PluralizationRules` classes have been deprecated, use `IdentityTranslator` instead
+ * The `Translator::getFallbackLocales()` and `TranslationDataCollector::getFallbackLocales()` method have been marked as internal
 
 Validator
 ---------
@@ -216,4 +228,6 @@ Validator
  * The component is now decoupled from `symfony/translation` and uses `Symfony\Contracts\Translation\TranslatorInterface` instead
  * The `ValidatorBuilderInterface` has been deprecated and `ValidatorBuilder` made final
  * Deprecated validating instances of `\DateTimeInterface` in `DateTimeValidator`, `DateValidator` and `TimeValidator`. Use `Type` instead or remove the constraint if the underlying model is type hinted to `\DateTimeInterface` already.
- * Using the `Bic` constraint without `symfony/intl` is deprecated
+ * Using the `Bic`, `Country`, `Currency`, `Language` and `Locale` constraints without `symfony/intl` is deprecated
+ * Using the `Email` constraint without `egulias/email-validator` is deprecated
+ * Using the `Expression` constraint without `symfony/expression-language` is deprecated
