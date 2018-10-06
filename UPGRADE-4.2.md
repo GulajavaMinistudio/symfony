@@ -114,6 +114,7 @@ FrameworkBundle
    set the "APP_ENV" environment variable instead.
  * The `--no-debug` console option has been deprecated,
    set the "APP_DEBUG" environment variable to "0" instead.
+ * The `Templating\Helper\TranslatorHelper::transChoice()` method has been deprecated, use the `trans()` one instead with a `%count%` parameter.
 
 Messenger
 ---------
@@ -219,8 +220,14 @@ Translation
 -----------
 
  * The `TranslatorInterface` has been deprecated in favor of `Symfony\Contracts\Translation\TranslatorInterface`
+ * The `Translator::transChoice()` method has been deprecated in favor of using `Translator::trans()` with "%count%" as the parameter driving plurals
  * The `MessageSelector`, `Interval` and `PluralizationRules` classes have been deprecated, use `IdentityTranslator` instead
  * The `Translator::getFallbackLocales()` and `TranslationDataCollector::getFallbackLocales()` method have been marked as internal
+
+TwigBundle
+----------
+
+ * The `transchoice` tag and filter have been deprecated, use the `trans` ones instead with a `%count%` parameter.
 
 Validator
 ---------
@@ -231,3 +238,9 @@ Validator
  * Using the `Bic`, `Country`, `Currency`, `Language` and `Locale` constraints without `symfony/intl` is deprecated
  * Using the `Email` constraint without `egulias/email-validator` is deprecated
  * Using the `Expression` constraint without `symfony/expression-language` is deprecated
+
+WebServerBundle
+---------------
+
+* Omitting the `$environment` argument of the `ServerRunCommand` and 
+  `ServerStartCommand` constructors is deprecated.
