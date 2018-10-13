@@ -48,6 +48,7 @@ class Finder implements \IteratorAggregate, \Countable
     private $depths = array();
     private $sizes = array();
     private $followLinks = false;
+    private $reverseSorting = false;
     private $sort = false;
     private $ignore = 0;
     private $dirs = array();
@@ -464,6 +465,18 @@ class Finder implements \IteratorAggregate, \Countable
     }
 
     /**
+     * Reverses the sorting.
+     *
+     * @return $this
+     */
+    public function reverseSorting()
+    {
+        $this->reverseSorting = true;
+
+        return $this;
+    }
+
+    /**
      * Sorts files and directories by the last inode changed time.
      *
      * This is the time that the inode information was last modified (permissions, owner, group or other metadata).
@@ -737,8 +750,8 @@ class Finder implements \IteratorAggregate, \Countable
             $iterator = new Iterator\PathFilterIterator($iterator, $this->paths, $this->notPaths);
         }
 
-        if ($this->sort) {
-            $iteratorAggregate = new Iterator\SortableIterator($iterator, $this->sort);
+        if ($this->sort || $this->reverseSorting) {
+            $iteratorAggregate = new Iterator\SortableIterator($iterator, $this->sort, $this->reverseSorting);
             $iterator = $iteratorAggregate->getIterator();
         }
 

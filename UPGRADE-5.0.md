@@ -72,6 +72,36 @@ Finder
 Form
 ----
 
+ * The `getExtendedType()` method was removed from the `FormTypeExtensionInterface`. It is replaced by the the static
+   `getExtendedTypes()` method which must return an iterable of extended types.
+
+   Before:
+
+   ```php
+   class FooTypeExtension extends AbstractTypeExtension
+   {
+       public function getExtendedType()
+       {
+           return FormType::class;
+       }
+
+       // ...
+   }
+   ```
+
+   After:
+
+   ```php
+   class FooTypeExtension extends AbstractTypeExtension
+   {
+       public static function getExtendedTypes(): iterable
+       {
+           return array(FormType::class);
+       }
+
+       // ...
+   }
+   ```
  * The `scale` option was removed from the `IntegerType`.
  * The `$scale` argument of the `IntegerToLocalizedStringTransformer` was removed.
 
@@ -208,6 +238,7 @@ TwigBundle
 Validator
 --------
 
+ * The `checkMX` and `checkHost` properties of the Email constraint were removed
  * The `Email::__construct()` 'strict' property has been removed. Use 'mode'=>"strict" instead.
  * Calling `EmailValidator::__construct()` method with a boolean parameter has been removed, use `EmailValidator("strict")` instead.
  * Removed the `checkDNS` and `dnsMessage` options from the `Url` constraint.

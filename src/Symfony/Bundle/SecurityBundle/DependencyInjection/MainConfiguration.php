@@ -60,9 +60,7 @@ class MainConfiguration implements ConfigurationInterface
                     return false;
                 })
                 ->then(function ($v) {
-                    $v['access_decision_manager'] = array(
-                        'strategy' => AccessDecisionManager::STRATEGY_AFFIRMATIVE,
-                    );
+                    $v['access_decision_manager']['strategy'] = AccessDecisionManager::STRATEGY_AFFIRMATIVE;
 
                     return $v;
                 })
@@ -142,6 +140,7 @@ class MainConfiguration implements ConfigurationInterface
                                 ->example('^/path to resource/')
                             ->end()
                             ->scalarNode('host')->defaultNull()->end()
+                            ->integerNode('port')->defaultNull()->end()
                             ->arrayNode('ips')
                                 ->beforeNormalization()->ifString()->then(function ($v) { return array($v); })->end()
                                 ->prototype('scalar')->end()

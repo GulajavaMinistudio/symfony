@@ -84,7 +84,7 @@ abstract class CompleteConfigurationTest extends TestCase
             array(
                 'simple',
                 'security.user_checker',
-                '.security.request_matcher.6tndozi',
+                '.security.request_matcher.xmi9dcw',
                 false,
             ),
             array(
@@ -116,7 +116,7 @@ abstract class CompleteConfigurationTest extends TestCase
             array(
                 'host',
                 'security.user_checker',
-                '.security.request_matcher.and0kk1',
+                '.security.request_matcher.iw4hyjb',
                 true,
                 false,
                 'security.user.provider.concrete.default',
@@ -238,7 +238,7 @@ abstract class CompleteConfigurationTest extends TestCase
                 $this->assertEquals(array('ROLE_USER'), $attributes);
                 $this->assertEquals('https', $channel);
                 $this->assertEquals(
-                    array('/blog/524', null, array('GET', 'POST')),
+                    array('/blog/524', null, array('GET', 'POST'), array(), array(), null, 8000),
                     $requestMatcher->getArguments()
                 );
             } elseif (2 === $i) {
@@ -414,11 +414,22 @@ abstract class CompleteConfigurationTest extends TestCase
 
     /**
      * @expectedException \Symfony\Component\Config\Definition\Exception\InvalidConfigurationException
-     * @expectedExceptionMessage "strategy" and "service" cannot be used together.
+     * @expectedExceptionMessage Invalid configuration for path "security.access_decision_manager": "strategy" and "service" cannot be used together.
      */
     public function testAccessDecisionManagerServiceAndStrategyCannotBeUsedAtTheSameTime()
     {
-        $container = $this->getContainer('access_decision_manager_service_and_strategy');
+        $this->getContainer('access_decision_manager_service_and_strategy');
+    }
+
+    public function testAccessDecisionManagerOptionsAreNotOverriddenByImplicitStrategy()
+    {
+        $container = $this->getContainer('access_decision_manager_customized_config');
+
+        $accessDecisionManagerDefinition = $container->getDefinition('security.access.decision_manager');
+
+        $this->assertSame(AccessDecisionManager::STRATEGY_AFFIRMATIVE, $accessDecisionManagerDefinition->getArgument(1));
+        $this->assertTrue($accessDecisionManagerDefinition->getArgument(2));
+        $this->assertFalse($accessDecisionManagerDefinition->getArgument(3));
     }
 
     /**

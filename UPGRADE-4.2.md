@@ -55,9 +55,38 @@ Finder
 Form
 ----
 
+ * The `getExtendedType()` method of the `FormTypeExtensionInterface` is deprecated and will be removed in 5.0. Type
+   extensions must implement the static `getExtendedTypes()` method instead and return an iterable of extended types.
+
+   Before:
+
+   ```php
+   class FooTypeExtension extends AbstractTypeExtension
+   {
+       public function getExtendedType()
+       {
+           return FormType::class;
+       }
+
+       // ...
+   }
+   ```
+
+   After:
+
+   ```php
+   class FooTypeExtension extends AbstractTypeExtension
+   {
+       public static function getExtendedTypes(): iterable
+       {
+           return array(FormType::class);
+       }
+
+       // ...
+   }
+   ```
  * The `scale` option of the `IntegerType` is deprecated.
  * The `$scale` argument of the `IntegerToLocalizedStringTransformer` is deprecated.
-
  * Deprecated calling `FormRenderer::searchAndRenderBlock` for fields which were already rendered.
    Instead of expecting such calls to return empty strings, check if the field has already been rendered.
 
@@ -232,6 +261,7 @@ TwigBundle
 Validator
 ---------
 
+ * The `checkMX` and `checkHost` properties of the Email constraint are deprecated
  * The component is now decoupled from `symfony/translation` and uses `Symfony\Contracts\Translation\TranslatorInterface` instead
  * The `ValidatorBuilderInterface` has been deprecated and `ValidatorBuilder` made final
  * Deprecated validating instances of `\DateTimeInterface` in `DateTimeValidator`, `DateValidator` and `TimeValidator`. Use `Type` instead or remove the constraint if the underlying model is type hinted to `\DateTimeInterface` already.
