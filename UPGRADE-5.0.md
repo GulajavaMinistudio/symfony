@@ -104,6 +104,22 @@ Form
    ```
  * The `scale` option was removed from the `IntegerType`.
  * The `$scale` argument of the `IntegerToLocalizedStringTransformer` was removed.
+ * Calling `FormRenderer::searchAndRenderBlock` for fields which were already rendered
+   throws an exception instead of returning empty strings:
+
+   Before:
+   ```twig
+   {% for field in fieldsWithPotentialDuplicates %}
+      {{ form_widget(field) }}
+   {% endfor %}
+   ```
+
+   After:
+   ```twig
+   {% for field in fieldsWithPotentialDuplicates if not field.rendered %}
+      {{ form_widget(field) }}
+   {% endfor %}
+   ```
 
 FrameworkBundle
 ---------------
@@ -160,6 +176,12 @@ HttpFoundation
  * The `getSession()` method of the `Request` class throws an exception when session is null.
  * The default value of the "$secure" and "$samesite" arguments of Cookie's constructor
    changed respectively from "false" to "null" and from "null" to "lax".
+
+HttpKernel
+----------
+
+ * The `Kernel::getRootDir()` and the `kernel.root_dir` parameter have been removed
+ * The `KernelInterface::getName()` and the `kernel.name` parameter have been removed
 
 Monolog
 -------
@@ -238,7 +260,7 @@ TwigBundle
 Validator
 --------
 
- * The `checkMX` and `checkHost` properties of the Email constraint were removed
+ * The `checkMX` and `checkHost` options of the `Email` constraint were removed
  * The `Email::__construct()` 'strict' property has been removed. Use 'mode'=>"strict" instead.
  * Calling `EmailValidator::__construct()` method with a boolean parameter has been removed, use `EmailValidator("strict")` instead.
  * Removed the `checkDNS` and `dnsMessage` options from the `Url` constraint.
@@ -261,4 +283,4 @@ WebServerBundle
 ---------------
 
 * Omitting the `$environment` argument of  the `ServerRunCommand` and
-  `ServerStartCommand` constructors now throws a `\TypeError.
+  `ServerStartCommand` constructors now throws a `\TypeError`.

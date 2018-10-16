@@ -50,13 +50,6 @@
                 </span>
             </div>
 
-            {% if 'n/a' is not same as(collector.appname) %}
-                <div class="sf-toolbar-info-piece">
-                    <b>Kernel name</b>
-                    <span>{{ collector.appname }}</span>
-                </div>
-            {% endif %}
-
             {% if 'n/a' is not same as(collector.env) %}
                 <div class="sf-toolbar-info-piece">
                     <b>Environment</b>
@@ -160,13 +153,6 @@
                 <span class="value">{{ collector.symfonyversion }}</span>
                 <span class="label">Symfony version</span>
             </div>
-
-            {% if 'n/a' != collector.appname %}
-                <div class="metric">
-                    <span class="value">{{ collector.appname }}</span>
-                    <span class="label">Application name</span>
-                </div>
-            {% endif %}
 
             {% if 'n/a' != collector.env %}
                 <div class="metric">

@@ -76,7 +76,7 @@ class TranslationDebugCommand extends Command
         $this
             ->setDefinition(array(
                 new InputArgument('locale', InputArgument::REQUIRED, 'The locale'),
-                new InputArgument('bundle', InputArgument::OPTIONAL, 'The bundle name or directory where to load the messages, defaults to app/Resources folder'),
+                new InputArgument('bundle', InputArgument::OPTIONAL, 'The bundle name or directory where to load the messages'),
                 new InputOption('domain', null, InputOption::VALUE_OPTIONAL, 'The messages domain'),
                 new InputOption('only-missing', null, InputOption::VALUE_NONE, 'Displays only missing messages'),
                 new InputOption('only-unused', null, InputOption::VALUE_NONE, 'Displays only unused messages'),
@@ -86,7 +86,7 @@ class TranslationDebugCommand extends Command
             ->setHelp(<<<'EOF'
 The <info>%command.name%</info> command helps finding unused or missing translation
 messages and comparing them with the fallback ones by inspecting the
-templates and translation files of a given bundle or the app folder.
+templates and translation files of a given bundle or the default translations directory.
 
 You can display information about bundle translations in a specific locale:
 
@@ -104,7 +104,7 @@ You can only display unused messages:
 
   <info>php %command.full_name% --only-unused en AcmeDemoBundle</info>
 
-You can display information about app translations in a specific locale:
+You can display information about application translations in a specific locale:
 
   <info>php %command.full_name% en</info>
 
@@ -130,11 +130,11 @@ EOF
         $kernel = $this->getApplication()->getKernel();
 
         // Define Root Paths
-        $transPaths = array($kernel->getRootDir().'/Resources/translations');
+        $transPaths = array($kernel->getRootDir(false).'/Resources/translations');
         if ($this->defaultTransPath) {
             $transPaths[] = $this->defaultTransPath;
         }
-        $viewsPaths = array($kernel->getRootDir().'/Resources/views');
+        $viewsPaths = array($kernel->getRootDir(false).'/Resources/views');
         if ($this->defaultViewsPath) {
             $viewsPaths[] = $this->defaultViewsPath;
         }
@@ -147,12 +147,12 @@ EOF
                 if ($this->defaultTransPath) {
                     $transPaths[] = $this->defaultTransPath.'/'.$bundle->getName();
                 }
-                $transPaths[] = sprintf('%s/Resources/%s/translations', $kernel->getRootDir(), $bundle->getName());
+                $transPaths[] = sprintf('%s/Resources/%s/translations', $kernel->getRootDir(false), $bundle->getName());
                 $viewsPaths = array($bundle->getPath().'/Resources/views');
                 if ($this->defaultViewsPath) {
                     $viewsPaths[] = $this->defaultViewsPath.'/bundles/'.$bundle->getName();
                 }
-                $viewsPaths[] = sprintf('%s/Resources/%s/views', $kernel->getRootDir(), $bundle->getName());
+                $viewsPaths[] = sprintf('%s/Resources/%s/views', $kernel->getRootDir(false), $bundle->getName());
             } catch (\InvalidArgumentException $e) {
                 // such a bundle does not exist, so treat the argument as path
                 $transPaths = array($input->getArgument('bundle').'/Resources/translations');
@@ -168,12 +168,12 @@ EOF
                 if ($this->defaultTransPath) {
                     $transPaths[] = $this->defaultTransPath.'/'.$bundle->getName();
                 }
-                $transPaths[] = sprintf('%s/Resources/%s/translations', $kernel->getRootDir(), $bundle->getName());
+                $transPaths[] = sprintf('%s/Resources/%s/translations', $kernel->getRootDir(false), $bundle->getName());
                 $viewsPaths[] = $bundle->getPath().'/Resources/views';
                 if ($this->defaultViewsPath) {
                     $viewsPaths[] = $this->defaultViewsPath.'/bundles/'.$bundle->getName();
                 }
-                $viewsPaths[] = sprintf('%s/Resources/%s/views', $kernel->getRootDir(), $bundle->getName());
+                $viewsPaths[] = sprintf('%s/Resources/%s/views', $kernel->getRootDir(false), $bundle->getName());
             }
         }
 

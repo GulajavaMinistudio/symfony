@@ -60,7 +60,6 @@ class ConfigDataCollector extends DataCollector implements LateDataCollectorInte
             'token' => $response->headers->get('X-Debug-Token'),
             'symfony_version' => Kernel::VERSION,
             'symfony_state' => 'unknown',
-            'name' => isset($this->kernel) ? $this->kernel->getName() : 'n/a',
             'env' => isset($this->kernel) ? $this->kernel->getEnvironment() : 'n/a',
             'debug' => isset($this->kernel) ? $this->kernel->isDebug() : 'n/a',
             'php_version' => PHP_VERSION,
@@ -227,10 +226,14 @@ class ConfigDataCollector extends DataCollector implements LateDataCollectorInte
      * Gets the application name.
      *
      * @return string The application name
+     *
+     * @deprecated since Symfony 4.2
      */
     public function getAppName()
     {
-        return $this->data['name'];
+        @trigger_error(sprintf('The "%s()" method is deprecated since Symfony 4.2.', __METHOD__), E_USER_DEPRECATED);
+
+        return 'n/a';
     }
 
     /**

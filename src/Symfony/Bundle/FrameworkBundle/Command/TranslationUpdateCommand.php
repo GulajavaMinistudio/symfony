@@ -65,7 +65,7 @@ class TranslationUpdateCommand extends Command
         $this
             ->setDefinition(array(
                 new InputArgument('locale', InputArgument::REQUIRED, 'The locale'),
-                new InputArgument('bundle', InputArgument::OPTIONAL, 'The bundle name or directory where to load the messages, defaults to app/Resources folder'),
+                new InputArgument('bundle', InputArgument::OPTIONAL, 'The bundle name or directory where to load the messages'),
                 new InputOption('prefix', null, InputOption::VALUE_OPTIONAL, 'Override the default prefix', '__'),
                 new InputOption('output-format', null, InputOption::VALUE_OPTIONAL, 'Override the default output format', 'xlf'),
                 new InputOption('dump-messages', null, InputOption::VALUE_NONE, 'Should the messages be dumped in the console'),
@@ -77,7 +77,7 @@ class TranslationUpdateCommand extends Command
             ->setDescription('Updates the translation file')
             ->setHelp(<<<'EOF'
 The <info>%command.name%</info> command extracts translation strings from templates
-of a given bundle or the app folder. It can display them or merge the new ones into the translation files.
+of a given bundle or the default translations directory. It can display them or merge the new ones into the translation files.
 
 When new translation strings are found it can automatically add a prefix to the translation
 message.
@@ -86,7 +86,7 @@ Example running against a Bundle (AcmeBundle)
   <info>php %command.full_name% --dump-messages en AcmeBundle</info>
   <info>php %command.full_name% --force --prefix="new_" fr AcmeBundle</info>
 
-Example running against app messages (app/Resources folder)
+Example running against default messages directory
   <info>php %command.full_name% --dump-messages en</info>
   <info>php %command.full_name% --force --prefix="new_" fr</info>
 EOF
@@ -120,15 +120,15 @@ EOF
         $kernel = $this->getApplication()->getKernel();
 
         // Define Root Paths
-        $transPaths = array($kernel->getRootDir().'/Resources/translations');
+        $transPaths = array($kernel->getRootDir(false).'/Resources/translations');
         if ($this->defaultTransPath) {
             $transPaths[] = $this->defaultTransPath;
         }
-        $viewsPaths = array($kernel->getRootDir().'/Resources/views');
+        $viewsPaths = array($kernel->getRootDir(false).'/Resources/views');
         if ($this->defaultViewsPath) {
             $viewsPaths[] = $this->defaultViewsPath;
         }
-        $currentName = 'app folder';
+        $currentName = 'default directory';
 
         // Override with provided Bundle info
         if (null !== $input->getArgument('bundle')) {
@@ -138,12 +138,12 @@ EOF
                 if ($this->defaultTransPath) {
                     $transPaths[] = $this->defaultTransPath.'/'.$foundBundle->getName();
                 }
-                $transPaths[] = sprintf('%s/Resources/%s/translations', $kernel->getRootDir(), $foundBundle->getName());
+                $transPaths[] = sprintf('%s/Resources/%s/translations', $kernel->getRootDir(false), $foundBundle->getName());
                 $viewsPaths = array($foundBundle->getPath().'/Resources/views');
                 if ($this->defaultViewsPath) {
                     $viewsPaths[] = $this->defaultViewsPath.'/bundles/'.$foundBundle->getName();
                 }
-                $viewsPaths[] = sprintf('%s/Resources/%s/views', $kernel->getRootDir(), $foundBundle->getName());
+                $viewsPaths[] = sprintf('%s/Resources/%s/views', $kernel->getRootDir(false), $foundBundle->getName());
                 $currentName = $foundBundle->getName();
             } catch (\InvalidArgumentException $e) {
                 // such a bundle does not exist, so treat the argument as path
