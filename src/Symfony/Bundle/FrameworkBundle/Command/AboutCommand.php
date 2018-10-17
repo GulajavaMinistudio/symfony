@@ -58,7 +58,7 @@ EOT
     {
         $io = new SymfonyStyle($input, $output);
 
-        /** @var $kernel KernelInterface */
+        /** @var KernelInterface $kernel */
         $kernel = $this->getApplication()->getKernel();
 
         $rows = array(
@@ -101,9 +101,9 @@ EOT
         $io->table(array(), $rows);
     }
 
-    private static function formatPath(string $path, string $baseDir = null): string
+    private static function formatPath(string $path, string $baseDir): string
     {
-        return null !== $baseDir ? preg_replace('~^'.preg_quote($baseDir, '~').'~', '.', $path) : $path;
+        return preg_replace('~^'.preg_quote($baseDir, '~').'~', '.', $path);
     }
 
     private static function formatFileSize(string $path): string
