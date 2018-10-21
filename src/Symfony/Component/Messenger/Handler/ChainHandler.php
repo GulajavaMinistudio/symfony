@@ -30,7 +30,7 @@ class ChainHandler
      */
     public function __construct(array $handlers)
     {
-        if (empty($handlers)) {
+        if (!$handlers) {
             throw new InvalidArgumentException('A collection of message handlers requires at least one handler.');
         }
 
@@ -39,12 +39,8 @@ class ChainHandler
 
     public function __invoke($message)
     {
-        $results = array();
-
         foreach ($this->handlers as $handler) {
-            $results[] = $handler($message);
+            $handler($message);
         }
-
-        return $results;
     }
 }

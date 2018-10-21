@@ -13,7 +13,6 @@ namespace Symfony\Component\Messenger\Tests;
 
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Messenger\Envelope;
-use Symfony\Component\Messenger\EnvelopeAwareInterface;
 use Symfony\Component\Messenger\MessageBus;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Messenger\Middleware\MiddlewareInterface;
@@ -31,55 +30,29 @@ class MessageBusTest extends TestCase
     }
 
     /**
-     * @expectedException \Symfony\Component\Messenger\Exception\InvalidArgumentException
-     * @expectedExceptionMessage Invalid type for message argument. Expected object, but got "string".
+     * @expectedException \TypeError
+     * @expectedExceptionMessage Invalid argument provided to "Symfony\Component\Messenger\MessageBus::dispatch()": expected object, but got string.
      */
     public function testItDispatchInvalidMessageType()
     {
         (new MessageBus())->dispatch('wrong');
     }
 
-    public function testItCallsMiddlewareAndChainTheReturnValue()
+    public function testItCallsMiddleware()
     {
         $message = new DummyMessage('Hello');
+        $envelope = new Envelope($message);
         $responseFromDepthMiddleware = 1234;
 
         $firstMiddleware = $this->getMockBuilder(MiddlewareInterface::class)->getMock();
         $firstMiddleware->expects($this->once())
             ->method('handle')
-            ->with($message, $this->anything())
-            ->will($this->returnCallback(function ($message, $next) {
-                return $next($message);
+            ->with($envelope, $this->anything())
+            ->will($this->returnCallback(function ($envelope, $next) {
+                $next($envelope);
             }));
 
         $secondMiddleware = $this->getMockBuilder(MiddlewareInterface::class)->getMock();
-        $secondMiddleware->expects($this->once())
-            ->method('handle')
-            ->with($message, $this->anything())
-            ->willReturn($responseFromDepthMiddleware);
-
-        $bus = new MessageBus(array(
-            $firstMiddleware,
-            $secondMiddleware,
-        ));
-
-        $this->assertEquals($responseFromDepthMiddleware, $bus->dispatch($message));
-    }
-
-    public function testItKeepsTheEnvelopeEvenThroughAMiddlewareThatIsNotEnvelopeAware()
-    {
-        $message = new DummyMessage('Hello');
-        $envelope = new Envelope($message, new ReceivedStamp());
-
-        $firstMiddleware = $this->getMockBuilder(MiddlewareInterface::class)->getMock();
-        $firstMiddleware->expects($this->once())
-            ->method('handle')
-            ->with($message, $this->anything())
-            ->will($this->returnCallback(function ($message, $next) {
-                return $next($message);
-            }));
-
-        $secondMiddleware = $this->getMockBuilder(array(MiddlewareInterface::class, EnvelopeAwareInterface::class))->getMock();
         $secondMiddleware->expects($this->once())
             ->method('handle')
             ->with($envelope, $this->anything())
@@ -90,7 +63,7 @@ class MessageBusTest extends TestCase
             $secondMiddleware,
         ));
 
-        $bus->dispatch($envelope);
+        $bus->dispatch($message);
     }
 
     public function testThatAMiddlewareCanAddSomeStampsToTheEnvelope()
@@ -99,23 +72,23 @@ class MessageBusTest extends TestCase
         $envelope = new Envelope($message, new ReceivedStamp());
         $envelopeWithAnotherStamp = $envelope->with(new AnEnvelopeStamp());
 
-        $firstMiddleware = $this->getMockBuilder(array(MiddlewareInterface::class, EnvelopeAwareInterface::class))->getMock();
+        $firstMiddleware = $this->getMockBuilder(MiddlewareInterface::class)->getMock();
         $firstMiddleware->expects($this->once())
             ->method('handle')
             ->with($envelope, $this->anything())
-            ->will($this->returnCallback(function ($message, $next) {
-                return $next($message->with(new AnEnvelopeStamp()));
+            ->will($this->returnCallback(function ($envelope, $next) {
+                $next($envelope->with(new AnEnvelopeStamp()));
             }));
 
         $secondMiddleware = $this->getMockBuilder(MiddlewareInterface::class)->getMock();
         $secondMiddleware->expects($this->once())
             ->method('handle')
-            ->with($message, $this->anything())
-            ->will($this->returnCallback(function ($message, $next) {
-                return $next($message);
+            ->with($envelopeWithAnotherStamp, $this->anything())
+            ->will($this->returnCallback(function ($envelope, $next) {
+                $next($envelope);
             }));
 
-        $thirdMiddleware = $this->getMockBuilder(array(MiddlewareInterface::class, EnvelopeAwareInterface::class))->getMock();
+        $thirdMiddleware = $this->getMockBuilder(MiddlewareInterface::class)->getMock();
         $thirdMiddleware->expects($this->once())
             ->method('handle')
             ->with($envelopeWithAnotherStamp, $this->anything())
@@ -141,12 +114,12 @@ class MessageBusTest extends TestCase
         $firstMiddleware = $this->getMockBuilder(MiddlewareInterface::class)->getMock();
         $firstMiddleware->expects($this->once())
             ->method('handle')
-            ->with($message, $this->anything())
-            ->will($this->returnCallback(function ($message, $next) use ($changedMessage) {
-                return $next($changedMessage);
+            ->with($envelope, $this->anything())
+            ->will($this->returnCallback(function ($message, $next) use ($expectedEnvelope) {
+                $next($expectedEnvelope);
             }));
 
-        $secondMiddleware = $this->getMockBuilder(array(MiddlewareInterface::class, EnvelopeAwareInterface::class))->getMock();
+        $secondMiddleware = $this->getMockBuilder(MiddlewareInterface::class)->getMock();
         $secondMiddleware->expects($this->once())
             ->method('handle')
             ->with($expectedEnvelope, $this->anything())

@@ -28,21 +28,14 @@ final class Envelope
      */
     public function __construct($message, StampInterface ...$stamps)
     {
+        if (!\is_object($message)) {
+            throw new \TypeError(sprintf('Invalid argument provided to "%s()": expected object but got %s.', __METHOD__, \gettype($message)));
+        }
         $this->message = $message;
 
         foreach ($stamps as $stamp) {
             $this->stamps[\get_class($stamp)] = $stamp;
         }
-    }
-
-    /**
-     * Wrap a message into an envelope if not already wrapped.
-     *
-     * @param Envelope|object $message
-     */
-    public static function wrap($message): self
-    {
-        return $message instanceof self ? $message : new self($message);
     }
 
     /**
@@ -55,15 +48,6 @@ final class Envelope
         foreach ($stamps as $stamp) {
             $cloned->stamps[\get_class($stamp)] = $stamp;
         }
-
-        return $cloned;
-    }
-
-    public function withMessage($message): self
-    {
-        $cloned = clone $this;
-
-        $cloned->message = $message;
 
         return $cloned;
     }
@@ -87,16 +71,5 @@ final class Envelope
     public function getMessage()
     {
         return $this->message;
-    }
-
-    /**
-     * @param object $target
-     *
-     * @return Envelope|object The original message or the envelope if the target supports it
-     *                         (i.e implements {@link EnvelopeAwareInterface}).
-     */
-    public function getMessageFor($target)
-    {
-        return $target instanceof EnvelopeAwareInterface ? $this : $this->message;
     }
 }

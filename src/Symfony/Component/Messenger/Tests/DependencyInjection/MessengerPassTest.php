@@ -90,10 +90,10 @@ class MessengerPassTest extends TestCase
             ->setAbstract(true)
         ;
 
-        $middlewares = array(array('id' => 'call_message_handler'));
+        $middlewareHandlers = array(array('id' => 'call_message_handler'));
 
-        $container->setParameter($commandBusId.'.middleware', $middlewares);
-        $container->setParameter($queryBusId.'.middleware', $middlewares);
+        $container->setParameter($commandBusId.'.middleware', $middlewareHandlers);
+        $container->setParameter($queryBusId.'.middleware', $middlewareHandlers);
 
         $container->register(DummyCommandHandler::class)->addTag('messenger.message_handler', array('bus' => $commandBusId));
         $container->register(DummyQueryHandler::class)->addTag('messenger.message_handler', array('bus' => $queryBusId));
@@ -607,10 +607,10 @@ class MessengerPassTest extends TestCase
 
         $container->register('console.command.messenger_debug', DebugCommand::class)->addArgument(array());
 
-        $middlewares = array(array('id' => 'call_message_handler'));
+        $middlewareHandlers = array(array('id' => 'call_message_handler'));
 
-        $container->setParameter($commandBusId.'.middleware', $middlewares);
-        $container->setParameter($queryBusId.'.middleware', $middlewares);
+        $container->setParameter($commandBusId.'.middleware', $middlewareHandlers);
+        $container->setParameter($queryBusId.'.middleware', $middlewareHandlers);
 
         $container->register(DummyCommandHandler::class)->addTag('messenger.message_handler', array('bus' => $commandBusId));
         $container->register(DummyQueryHandler::class)->addTag('messenger.message_handler', array('bus' => $queryBusId));
@@ -670,7 +670,7 @@ class DummyReceiver implements ReceiverInterface
     public function receive(callable $handler): void
     {
         for ($i = 0; $i < 3; ++$i) {
-            $handler(Envelope::wrap(new DummyMessage("Dummy $i")));
+            $handler(new Envelope(new DummyMessage("Dummy $i")));
         }
     }
 
@@ -852,8 +852,8 @@ class HandlerOnUndefinedBus implements MessageSubscriberInterface
 
 class UselessMiddleware implements MiddlewareInterface
 {
-    public function handle($message, callable $next)
+    public function handle(Envelope $message, callable $next): void
     {
-        return $next($message);
+        $next($message);
     }
 }

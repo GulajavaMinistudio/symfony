@@ -6,6 +6,9 @@ CHANGELOG
 
  * The component is not experimental anymore
  * All the changes below are BC BREAKS
+ * `MessageBusInterface::dispatch()` and `MiddlewareInterface::handle()` now return `void`
+ * `MiddlewareInterface::handle()` now require an `Envelope` as first argument
+ * `EnvelopeAwareInterface` has been removed
  * The signature of `Amqp*` classes changed to take a `Connection` as a first argument and an optional
    `Serializer` as a second argument.
  * `SenderLocator` has been renamed to `ContainerSenderLocator`
@@ -24,6 +27,12 @@ CHANGELOG
  * `Envelope`'s constructor and `with()` method now accept `StampInterface` objects as variadic parameters
  * Renamed and moved `ReceivedMessage`, `ValidationConfiguration` and `SerializerConfiguration` in the `Stamp` namespace
  * Removed the `WrapIntoReceivedMessage`
+ * `SenderLocatorInterface::getSenderForMessage()` has been replaced by `getSender(Envelope $envelope)`
+ * `MessengerDataCollector::getMessages()` returns an iterable, not just an array anymore
+ * `AbstractHandlerLocator` is now internal
+ * `HandlerLocatorInterface::resolve()` has been replaced by `getHandler(Envelope $envelope)`
+ * `SenderLocatorInterface::getSenderForMessage()` has been replaced by `getSender(Envelope $envelope)`
+ * `SenderInterface::send()` returns `void`
 
 4.1.0
 -----
