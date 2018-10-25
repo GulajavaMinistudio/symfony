@@ -27,9 +27,9 @@ use Symfony\Component\Messenger\Handler\ChainHandler;
 use Symfony\Component\Messenger\Handler\MessageHandlerInterface;
 use Symfony\Component\Messenger\Handler\MessageSubscriberInterface;
 use Symfony\Component\Messenger\MessageBusInterface;
-use Symfony\Component\Messenger\Middleware\AllowNoHandlerMiddleware;
 use Symfony\Component\Messenger\Middleware\HandleMessageMiddleware;
 use Symfony\Component\Messenger\Middleware\MiddlewareInterface;
+use Symfony\Component\Messenger\Middleware\StackInterface;
 use Symfony\Component\Messenger\Tests\Fixtures\DummyCommand;
 use Symfony\Component\Messenger\Tests\Fixtures\DummyCommandHandler;
 use Symfony\Component\Messenger\Tests\Fixtures\DummyMessage;
@@ -40,7 +40,7 @@ use Symfony\Component\Messenger\Tests\Fixtures\MultipleBusesMessageHandler;
 use Symfony\Component\Messenger\Tests\Fixtures\SecondMessage;
 use Symfony\Component\Messenger\Transport\AmqpExt\AmqpReceiver;
 use Symfony\Component\Messenger\Transport\AmqpExt\AmqpSender;
-use Symfony\Component\Messenger\Transport\ReceiverInterface;
+use Symfony\Component\Messenger\Transport\Receiver\ReceiverInterface;
 use Symfony\Component\Stopwatch\Stopwatch;
 
 class MessengerPassTest extends TestCase
@@ -344,7 +344,7 @@ class MessengerPassTest extends TestCase
 
     /**
      * @expectedException \Symfony\Component\DependencyInjection\Exception\RuntimeException
-     * @expectedExceptionMessage Invalid sender "app.messenger.sender": class "Symfony\Component\Messenger\Tests\DependencyInjection\InvalidSender" must implement interface "Symfony\Component\Messenger\Transport\SenderInterface".
+     * @expectedExceptionMessage Invalid sender "app.messenger.sender": class "Symfony\Component\Messenger\Tests\DependencyInjection\InvalidSender" must implement interface "Symfony\Component\Messenger\Transport\Sender\SenderInterface".
      */
     public function testItDoesNotRegisterInvalidSender()
     {
@@ -493,7 +493,6 @@ class MessengerPassTest extends TestCase
     public function testRegistersMiddlewareFromServices()
     {
         $container = $this->getContainerBuilder($fooBusId = 'messenger.bus.foo');
-        $container->register('messenger.middleware.allow_no_handler', AllowNoHandlerMiddleware::class)->setAbstract(true);
         $container->register('middleware_with_factory', UselessMiddleware::class)->addArgument('some_default')->setAbstract(true);
         $container->register('middleware_with_factory_using_default', UselessMiddleware::class)->addArgument('some_default')->setAbstract(true);
         $container->register(UselessMiddleware::class, UselessMiddleware::class);
@@ -502,13 +501,10 @@ class MessengerPassTest extends TestCase
             array('id' => UselessMiddleware::class),
             array('id' => 'middleware_with_factory', 'arguments' => array('foo', 'bar')),
             array('id' => 'middleware_with_factory_using_default'),
-            array('id' => 'allow_no_handler'),
         ));
 
         (new MessengerPass())->process($container);
         (new ResolveChildDefinitionsPass())->process($container);
-
-        $this->assertTrue($container->hasDefinition($childMiddlewareId = $fooBusId.'.middleware.allow_no_handler'));
 
         $this->assertTrue($container->hasDefinition($factoryChildMiddlewareId = $fooBusId.'.middleware.middleware_with_factory'));
         $this->assertEquals(
@@ -528,7 +524,6 @@ class MessengerPassTest extends TestCase
             new Reference(UselessMiddleware::class),
             new Reference($factoryChildMiddlewareId),
             new Reference($factoryWithDefaultChildMiddlewareId),
-            new Reference($childMiddlewareId),
         ), $container->getDefinition($fooBusId)->getArgument(0));
         $this->assertFalse($container->hasParameter($middlewareParameter));
     }
@@ -852,8 +847,8 @@ class HandlerOnUndefinedBus implements MessageSubscriberInterface
 
 class UselessMiddleware implements MiddlewareInterface
 {
-    public function handle(Envelope $message, callable $next): void
+    public function handle(Envelope $message, StackInterface $stack): void
     {
-        $next($message);
+        $stack->next()->handle($message, $stack);
     }
 }

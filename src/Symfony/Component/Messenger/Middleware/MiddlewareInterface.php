@@ -18,16 +18,5 @@ use Symfony\Component\Messenger\Envelope;
  */
 interface MiddlewareInterface
 {
-    /**
-     * @param callable|NextInterface $next
-     */
-    public function handle(Envelope $envelope, callable $next): void;
-}
-
-/**
- * @internal
- */
-interface NextInterface
-{
-    public function __invoke(Envelope $envelope): void;
+    public function handle(Envelope $envelope, StackInterface $stack): void;
 }
