@@ -15,6 +15,7 @@ use Symfony\Component\Messenger\Envelope;
 use Symfony\Component\Messenger\Handler\Locator\HandlerLocator;
 use Symfony\Component\Messenger\Middleware\HandleMessageMiddleware;
 use Symfony\Component\Messenger\Middleware\StackMiddleware;
+use Symfony\Component\Messenger\Test\Middleware\MiddlewareTestCase;
 use Symfony\Component\Messenger\Tests\Fixtures\DummyMessage;
 
 class HandleMessageMiddlewareTest extends MiddlewareTestCase
@@ -50,6 +51,6 @@ class HandleMessageMiddlewareTest extends MiddlewareTestCase
     {
         $middleware = new HandleMessageMiddleware(new HandlerLocator(array()), true);
 
-        $this->assertNull($middleware->handle(new Envelope(new DummyMessage('Hey')), new StackMiddleware()));
+        $this->assertInstanceOf(Envelope::class, $middleware->handle(new Envelope(new DummyMessage('Hey')), new StackMiddleware()));
     }
 }
