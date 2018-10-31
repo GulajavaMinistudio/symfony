@@ -17,6 +17,8 @@ use Symfony\Component\Messenger\Stamp\StampInterface;
  * A message wrapped in an envelope with stamps (configurations, markers, ...).
  *
  * @author Maxime Steinhausser <maxime.steinhausser@gmail.com>
+ *
+ * @experimental in 4.2
  */
 final class Envelope
 {
@@ -71,5 +73,10 @@ final class Envelope
     public function getMessage()
     {
         return $this->message;
+    }
+
+    public function getMessageName(): string
+    {
+        return \get_class($this->message);
     }
 }
