@@ -73,15 +73,15 @@ abstract class Kernel implements KernelInterface, RebootableInterface, Terminabl
     private $requestStackSize = 0;
     private $resetServices = false;
 
-    const VERSION = '4.2.0-DEV';
-    const VERSION_ID = 40200;
+    const VERSION = '4.3.0-DEV';
+    const VERSION_ID = 40300;
     const MAJOR_VERSION = 4;
-    const MINOR_VERSION = 2;
+    const MINOR_VERSION = 3;
     const RELEASE_VERSION = 0;
     const EXTRA_VERSION = 'DEV';
 
-    const END_OF_MAINTENANCE = '07/2019';
-    const END_OF_LIFE = '01/2020';
+    const END_OF_MAINTENANCE = '01/2020';
+    const END_OF_LIFE = '07/2020';
 
     public function __construct(string $environment, bool $debug)
     {
@@ -225,7 +225,10 @@ abstract class Kernel implements KernelInterface, RebootableInterface, Terminabl
     public function getBundle($name)
     {
         if (!isset($this->bundles[$name])) {
-            throw new \InvalidArgumentException(sprintf('Bundle "%s" does not exist or it is not enabled. Maybe you forgot to add it in the registerBundles() method of your %s.php file?', $name, \get_class($this)));
+            $class = \get_class($this);
+            $class = 'c' === $class[0] && 0 === strpos($class, "class@anonymous\0") ? get_parent_class($class).'@anonymous' : $class;
+
+            throw new \InvalidArgumentException(sprintf('Bundle "%s" does not exist or it is not enabled. Maybe you forgot to add it in the registerBundles() method of your %s.php file?', $name, $class));
         }
 
         return $this->bundles[$name];
@@ -443,7 +446,10 @@ abstract class Kernel implements KernelInterface, RebootableInterface, Terminabl
      */
     protected function getContainerClass()
     {
-        return $this->name.str_replace('\\', '_', \get_class($this)).ucfirst($this->environment).($this->debug ? 'Debug' : '').'Container';
+        $class = \get_class($this);
+        $class = 'c' === $class[0] && 0 === strpos($class, "class@anonymous\0") ? get_parent_class($class).ContainerBuilder::hash($class) : $class;
+
+        return $this->name.str_replace('\\', '_', $class).ucfirst($this->environment).($this->debug ? 'Debug' : '').'Container';
     }
 
     /**
