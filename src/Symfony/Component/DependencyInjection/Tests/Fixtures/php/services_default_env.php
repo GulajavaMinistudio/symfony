@@ -14,7 +14,7 @@ use Symfony\Component\DependencyInjection\ParameterBag\FrozenParameterBag;
  *
  * @final since Symfony 3.3
  */
-class ProjectServiceContainer extends Container
+class Symfony_DI_PhpDumper_Test_DefaultParameters extends Container
 {
     private $parameters;
     private $targetDirs = array();
@@ -24,10 +24,6 @@ class ProjectServiceContainer extends Container
         $this->parameters = $this->getDefaultParameters();
 
         $this->services = $this->privates = array();
-        $this->methodMap = array(
-            'bar' => 'getBarService',
-            'foo' => 'getFooService',
-        );
 
         $this->aliases = array();
     }
@@ -47,29 +43,7 @@ class ProjectServiceContainer extends Container
         return array(
             'Psr\\Container\\ContainerInterface' => true,
             'Symfony\\Component\\DependencyInjection\\ContainerInterface' => true,
-            'bar_%env(BAR)%' => true,
-            'baz_%env(BAR)%' => true,
         );
-    }
-
-    /**
-     * Gets the public 'bar' shared service.
-     *
-     * @return \stdClass
-     */
-    protected function getBarService()
-    {
-        return $this->services['bar'] = new \stdClass(($this->privates['bar_%env(BAR)%'] ?? ($this->privates['bar_%env(BAR)%'] = new \stdClass())));
-    }
-
-    /**
-     * Gets the public 'foo' shared service.
-     *
-     * @return \stdClass
-     */
-    protected function getFooService()
-    {
-        return $this->services['foo'] = new \stdClass(($this->privates['bar_%env(BAR)%'] ?? ($this->privates['bar_%env(BAR)%'] = new \stdClass())), array('baz_'.$this->getEnv('string:BAR') => new \stdClass()));
     }
 
     public function getParameter($name)
@@ -111,7 +85,11 @@ class ProjectServiceContainer extends Container
         return $this->parameterBag;
     }
 
-    private $loadedDynamicParameters = array();
+    private $loadedDynamicParameters = array(
+        'fallback_env' => false,
+        'hello' => false,
+        'hello-bar' => false,
+    );
     private $dynamicParameters = array();
 
     /**
@@ -125,7 +103,15 @@ class ProjectServiceContainer extends Container
      */
     private function getDynamicParameter($name)
     {
-        throw new InvalidArgumentException(sprintf('The dynamic parameter "%s" must be defined.', $name));
+        switch ($name) {
+            case 'fallback_env': $value = $this->getEnv('foobar'); break;
+            case 'hello': $value = $this->getEnv('default:fallback_param:bar'); break;
+            case 'hello-bar': $value = $this->getEnv('default:fallback_env:key:baz:json:foo'); break;
+            default: throw new InvalidArgumentException(sprintf('The dynamic parameter "%s" must be defined.', $name));
+        }
+        $this->loadedDynamicParameters[$name] = true;
+
+        return $this->dynamicParameters[$name] = $value;
     }
 
     /**
@@ -136,7 +122,9 @@ class ProjectServiceContainer extends Container
     protected function getDefaultParameters()
     {
         return array(
-            'env(BAR)' => 'bar',
+            'fallback_param' => 'baz',
+            'env(foobar)' => 'foobaz',
+            'env(foo)' => '{"foo": "bar"}',
         );
     }
 }
