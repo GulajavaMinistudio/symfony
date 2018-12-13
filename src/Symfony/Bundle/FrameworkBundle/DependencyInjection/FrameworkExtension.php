@@ -37,7 +37,6 @@ use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\DependencyInjection\Alias;
 use Symfony\Component\DependencyInjection\Argument\IteratorArgument;
-use Symfony\Component\DependencyInjection\Argument\RewindableGenerator;
 use Symfony\Component\DependencyInjection\Argument\ServiceClosureArgument;
 use Symfony\Component\DependencyInjection\ChildDefinition;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
@@ -70,6 +69,7 @@ use Symfony\Component\Lock\StoreInterface;
 use Symfony\Component\Messenger\Handler\MessageHandlerInterface;
 use Symfony\Component\Messenger\MessageBus;
 use Symfony\Component\Messenger\MessageBusInterface;
+use Symfony\Component\Messenger\Transport\Serialization\SerializerInterface;
 use Symfony\Component\Messenger\Transport\TransportFactoryInterface;
 use Symfony\Component\Messenger\Transport\TransportInterface;
 use Symfony\Component\PropertyAccess\PropertyAccessor;
@@ -1530,6 +1530,7 @@ class FrameworkExtension extends Extension
                 $container->setAlias('messenger.transport.serializer', $config['serializer']['id']);
             } else {
                 $container->removeDefinition('messenger.transport.amqp.factory');
+                $container->removeDefinition(SerializerInterface::class);
             }
         }
 
@@ -1600,12 +1601,7 @@ class FrameworkExtension extends Extension
                 $senders[$sender] = new Reference($senderAliases[$sender] ?? $sender);
             }
 
-            $sendersId = 'messenger.senders.'.$message;
-            $container->register($sendersId, RewindableGenerator::class)
-                ->setFactory('current')
-                ->addArgument(array(new IteratorArgument($senders)));
-            $messageToSendersMapping[$message] = new Reference($sendersId);
-
+            $messageToSendersMapping[$message] = new IteratorArgument($senders);
             $messagesToSendAndHandle[$message] = $messageConfiguration['send_and_handle'];
         }
 

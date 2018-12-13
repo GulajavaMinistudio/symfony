@@ -592,7 +592,7 @@ class ContainerBuilder extends Container implements TaggedContainerInterface
             throw $e;
         }
 
-        if ($e = $definition->getErrors()) {
+        if ($definition->hasErrors() && $e = $definition->getErrors()) {
             throw new RuntimeException(reset($e));
         }
 
@@ -1162,7 +1162,7 @@ class ContainerBuilder extends Container implements TaggedContainerInterface
                 throw new InvalidArgumentException(sprintf('The configure callable for class "%s" is not a callable.', \get_class($service)));
             }
 
-            \call_user_func($callable, $service);
+            $callable($service);
         }
 
         return $service;
