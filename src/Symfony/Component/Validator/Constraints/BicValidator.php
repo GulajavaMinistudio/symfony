@@ -29,7 +29,7 @@ use Symfony\Component\Validator\Exception\UnexpectedValueException;
  */
 class BicValidator extends ConstraintValidator
 {
-    private const BIC_COUNTRY_TO_IBAN_COUNTRY_MAP = array(
+    private const BIC_COUNTRY_TO_IBAN_COUNTRY_MAP = [
         // Reference: https://www.ecbs.org/iban/france-bank-account-number.html
         'GF' => 'FR', // French Guiana
         'PF' => 'FR', // French Polynesia
@@ -46,7 +46,7 @@ class BicValidator extends ConstraintValidator
         'IM' => 'GB', // Isle of Man
         'GG' => 'GB', // Guernsey
         'VG' => 'GB', // British Virgin Islands
-    );
+    ];
 
     private $propertyAccessor;
 
@@ -75,7 +75,7 @@ class BicValidator extends ConstraintValidator
         $canonicalize = str_replace(' ', '', $value);
 
         // the bic must be either 8 or 11 characters long
-        if (!\in_array(\strlen($canonicalize), array(8, 11))) {
+        if (!\in_array(\strlen($canonicalize), [8, 11])) {
             $this->context->buildViolation($constraint->message)
                 ->setParameter('{{ value }}', $this->formatValue($value))
                 ->setCode(Bic::INVALID_LENGTH_ERROR)
