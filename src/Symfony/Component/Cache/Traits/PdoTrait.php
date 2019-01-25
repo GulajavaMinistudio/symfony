@@ -340,8 +340,14 @@ trait PdoTrait
         }
 
         foreach ($values as $id => $data) {
-            $stmt->execute();
-
+            try {
+                $stmt->execute();
+            } catch (TableNotFoundException $e) {
+                if (!$conn->isTransactionActive() || \in_array($this->driver, ['pgsql', 'sqlite', 'sqlsrv'], true)) {
+                    $this->createTable();
+                }
+                $stmt->execute();
+            }
             if (null === $driver && !$stmt->rowCount()) {
                 try {
                     $insertStmt->execute();

@@ -28,7 +28,7 @@ class CsrfValidationListenerTest extends TestCase
         $this->dispatcher = $this->getMockBuilder('Symfony\Component\EventDispatcher\EventDispatcherInterface')->getMock();
         $this->factory = $this->getMockBuilder('Symfony\Component\Form\FormFactoryInterface')->getMock();
         $this->tokenManager = $this->getMockBuilder('Symfony\Component\Security\Csrf\CsrfTokenManagerInterface')->getMock();
-        $this->form = $this->getBuilder('post')
+        $this->form = $this->getBuilder()
             ->setDataMapper($this->getDataMapper())
             ->getForm();
     }
@@ -41,24 +41,14 @@ class CsrfValidationListenerTest extends TestCase
         $this->form = null;
     }
 
-    protected function getBuilder($name = 'name')
+    protected function getBuilder()
     {
-        return new FormBuilder($name, null, $this->dispatcher, $this->factory, ['compound' => true]);
-    }
-
-    protected function getForm($name = 'name')
-    {
-        return $this->getBuilder($name)->getForm();
+        return new FormBuilder('post', null, $this->dispatcher, $this->factory, ['compound' => true]);
     }
 
     protected function getDataMapper()
     {
         return $this->getMockBuilder('Symfony\Component\Form\DataMapperInterface')->getMock();
-    }
-
-    protected function getMockForm()
-    {
-        return $this->getMockBuilder('Symfony\Component\Form\Test\FormInterface')->getMock();
     }
 
     // https://github.com/symfony/symfony/pull/5838

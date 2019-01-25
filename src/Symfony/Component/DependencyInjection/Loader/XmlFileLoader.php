@@ -220,6 +220,10 @@ class XmlFileLoader extends FileLoader
                 $alias->setPublic($defaults['public']);
             }
 
+            if ($deprecated = $this->getChildren($service, 'deprecated')) {
+                $alias->setDeprecated(true, $deprecated[0]->nodeValue ?: null);
+            }
+
             return;
         }
 
@@ -395,7 +399,7 @@ class XmlFileLoader extends FileLoader
         try {
             $dom = XmlUtils::loadFile($file, [$this, 'validateSchema']);
         } catch (\InvalidArgumentException $e) {
-            throw new InvalidArgumentException(sprintf('Unable to parse file "%s".', $file), $e->getCode(), $e);
+            throw new InvalidArgumentException(sprintf('Unable to parse file "%s": %s', $file, $e->getMessage()), $e->getCode(), $e);
         }
 
         $this->validateExtensions($dom, $file);
@@ -668,7 +672,10 @@ EOF
         }
 
         foreach ($alias->childNodes as $child) {
-            if ($child instanceof \DOMElement && self::NS === $child->namespaceURI) {
+            if (!$child instanceof \DOMElement && self::NS !== $child->namespaceURI) {
+                continue;
+            }
+            if (!\in_array($child->localName, ['deprecated'], true)) {
                 throw new InvalidArgumentException(sprintf('Invalid child element "%s" defined for alias "%s" in "%s".', $child->localName, $alias->getAttribute('id'), $file));
             }
         }

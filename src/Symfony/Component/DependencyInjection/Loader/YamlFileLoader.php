@@ -349,8 +349,12 @@ class YamlFileLoader extends FileLoader
             }
 
             foreach ($service as $key => $value) {
-                if (!\in_array($key, ['alias', 'public'])) {
+                if (!\in_array($key, ['alias', 'public', 'deprecated'])) {
                     throw new InvalidArgumentException(sprintf('The configuration key "%s" is unsupported for the service "%s" which is defined as an alias in "%s". Allowed configuration keys for service aliases are "alias" and "public".', $key, $id, $file));
+                }
+
+                if ('deprecated' === $key) {
+                    $alias->setDeprecated(true, $value);
                 }
             }
 
@@ -630,7 +634,7 @@ class YamlFileLoader extends FileLoader
         try {
             $configuration = $this->yamlParser->parseFile($file, Yaml::PARSE_CONSTANT | Yaml::PARSE_CUSTOM_TAGS);
         } catch (ParseException $e) {
-            throw new InvalidArgumentException(sprintf('The file "%s" does not contain valid YAML.', $file), 0, $e);
+            throw new InvalidArgumentException(sprintf('The file "%s" does not contain valid YAML: %s', $file, $e->getMessage()), 0, $e);
         }
 
         return $this->validate($configuration, $file);

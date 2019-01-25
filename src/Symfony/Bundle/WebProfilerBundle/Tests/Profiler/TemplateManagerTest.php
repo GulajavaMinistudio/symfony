@@ -13,6 +13,7 @@ namespace Symfony\Bundle\WebProfilerBundle\Tests\Profiler;
 
 use Symfony\Bundle\WebProfilerBundle\Profiler\TemplateManager;
 use Symfony\Bundle\WebProfilerBundle\Tests\TestCase;
+use Symfony\Component\HttpKernel\Profiler\Profile;
 use Twig\Environment;
 
 /**
@@ -57,8 +58,7 @@ class TemplateManagerTest extends TestCase
      */
     public function testGetNameOfInvalidTemplate()
     {
-        $profile = $this->mockProfile();
-        $this->templateManager->getName($profile, 'notexistingpanel');
+        $this->templateManager->getName(new Profile('token'), 'notexistingpanel');
     }
 
     /**
@@ -71,12 +71,7 @@ class TemplateManagerTest extends TestCase
             ->withAnyParameters()
             ->will($this->returnCallback([$this, 'profilerHasCallback']));
 
-        $profile = $this->mockProfile();
-        $profile->expects($this->any())
-            ->method('hasCollector')
-            ->will($this->returnCallback([$this, 'profileHasCollectorCallback']));
-
-        $this->assertEquals('FooBundle:Collector:foo.html.twig', $this->templateManager->getName($profile, 'foo'));
+        $this->assertEquals('FooBundle:Collector:foo.html.twig', $this->templateManager->getName(new ProfileDummy(), 'foo'));
     }
 
     public function profilerHasCallback($panel)
@@ -131,5 +126,24 @@ class TemplateManagerTest extends TestCase
             ->getMock();
 
         return $this->profiler;
+    }
+}
+
+class ProfileDummy extends Profile
+{
+    public function __construct()
+    {
+        parent::__construct('token');
+    }
+
+    public function hasCollector($name)
+    {
+        switch ($name) {
+            case 'foo':
+            case 'bar':
+                return true;
+            default:
+                return false;
+        }
     }
 }
