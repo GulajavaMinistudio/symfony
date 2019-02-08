@@ -44,3 +44,43 @@ HttpFoundation
    use `Symfony\Component\Mime\FileBinaryMimeTypeGuesser` instead.
  * The `FileinfoMimeTypeGuesser` class has been deprecated,
    use `Symfony\Component\Mime\FileinfoMimeTypeGuesser` instead.
+
+Security
+--------
+
+ * The `AbstractToken::serialize()`, `AbstractToken::unserialize()`,
+   `AuthenticationException::serialize()` and `AuthenticationException::unserialize()`
+   methods are now final, use `getState()` and `setState()` instead.
+
+   Before:
+   ```php
+   public function serialize()
+   {
+       return [$this->myLocalVar, parent::serialize()];
+   }
+
+   public function unserialize($serialized)
+   {
+       [$this->myLocalVar, $parentSerialized] = unserialize($serialized);
+       parent::unserialize($parentSerialized);
+   }
+   ```
+
+   After:
+   ```php
+   protected function getState(): array
+   {
+       return [$this->myLocalVar, parent::getState()];
+   }
+
+   protected function setState(array $data)
+   {
+       [$this->myLocalVar, $parentData] = $data;
+       parent::setState($parentData);
+   }
+   ```
+
+Yaml
+----
+
+ * Using a mapping inside a multi-line string is deprecated and will throw a `ParseException` in 5.0.
