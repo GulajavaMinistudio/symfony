@@ -70,6 +70,12 @@ EventDispatcher
 
  * The `TraceableEventDispatcherInterface` has been removed.
 
+Filesystem
+----------
+
+ * The `Filesystem::dumpFile()` method no longer supports arrays in the `$content` argument.
+ * The `Filesystem::appendToFile()` method no longer supports arrays in the `$content` argument.
+
 Finder
 ------
 
@@ -222,6 +228,12 @@ Process
    // alternatively, when a shell wrapper is required
    $process = Process::fromShellCommandline('ls -l');
    ```
+
+Routing
+-------
+
+ * The `generator_base_class`, `generator_cache_class`, `matcher_base_class`, and `matcher_cache_class` router
+   options have been removed.
 
 Security
 --------
