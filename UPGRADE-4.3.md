@@ -37,6 +37,7 @@ FrameworkBundle
  * Not passing the project directory to the constructor of the `AssetsInstallCommand` is deprecated. This argument will
    be mandatory in 5.0.
  * Deprecated the "Psr\SimpleCache\CacheInterface" / "cache.app.simple" service, use "Symfony\Contracts\Cache\CacheInterface" / "cache.app" instead.
+ * The `generate()` method of the `UrlGenerator` class can return an empty string instead of null.
 
 HttpFoundation
 --------------
@@ -50,11 +51,18 @@ HttpFoundation
  * The `FileinfoMimeTypeGuesser` class has been deprecated,
    use `Symfony\Component\Mime\FileinfoMimeTypeGuesser` instead.
 
+Messenger
+---------
+
+ * `Amqp` transport does not throw `\AMQPException` anymore, catch `TransportException` instead.
+
 Routing
 -------
 
  * The `generator_base_class`, `generator_cache_class`, `matcher_base_class`, and `matcher_cache_class` router
    options have been deprecated.
+ * Implementing `Serializable` for `Route` and `CompiledRoute` is deprecated; if you serialize them, please
+   ensure your unserialization logic can recover from a failure related to an updated serialization format
 
 Security
 --------

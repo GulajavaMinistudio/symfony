@@ -4,9 +4,15 @@ CHANGELOG
 4.3.0
 -----
 
+ * `KernelInterface` doesn't extend `Serializable` anymore
+ * deprecated the `Kernel::serialize()` and `unserialize()` methods
  * increased the priority of `Symfony\Component\HttpKernel\EventListener\AddRequestFormatsListener`
  * made `Symfony\Component\HttpKernel\EventListenerLocaleListener` set the default locale early
  * made `FileLinkFormatter` final and not implement `Serializable` anymore
+ * the base `DataCollector` doesn't implement `Serializable` anymore, you should
+   store all the serialized state in the data property instead
+ * `DumpDataCollector` has been marked as `final`
+ * added an event listener to prevent search engines from indexing applications in debug mode.
 
 4.2.0
 -----

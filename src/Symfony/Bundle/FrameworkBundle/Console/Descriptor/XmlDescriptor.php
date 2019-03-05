@@ -215,6 +215,11 @@ class XmlDescriptor extends Descriptor
             }
         }
 
+        if ('' !== $route->getCondition()) {
+            $routeXML->appendChild($conditionXML = $dom->createElement('condition'));
+            $conditionXML->appendChild(new \DOMText($route->getCondition()));
+        }
+
         return $dom;
     }
 
