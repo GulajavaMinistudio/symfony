@@ -14,7 +14,7 @@ Cache
 
  * The `psr/simple-cache` dependency has been removed - run `composer require psr/simple-cache` if you need it.
  * Deprecated all PSR-16 adapters, use `Psr16Cache` or `Symfony\Contracts\Cache\CacheInterface` implementations instead.
- * Deprecated `SimpleCacheAdapter`, use `Psr16Adapter instead.
+ * Deprecated `SimpleCacheAdapter`, use `Psr16Adapter` instead.
 
 Config
 ------
@@ -61,6 +61,7 @@ Messenger
 ---------
 
  * `Amqp` transport does not throw `\AMQPException` anymore, catch `TransportException` instead.
+ * Deprecated the `LoggingMiddleware` class, pass a logger to `SendMessageMiddleware` instead.
 
 Routing
 -------
@@ -116,3 +117,28 @@ Yaml
 ----
 
  * Using a mapping inside a multi-line string is deprecated and will throw a `ParseException` in 5.0.
+
+Workflow
+--------
+
+ * `MarkingStoreInterface::setMarking()` will have a third argument in Symfony 5.0.
+
+   Before:
+   ```php
+   class MyMarkingStore implements MarkingStoreInterface
+   {
+       public function setMarking($subject, Marking $marking)
+       {
+       }
+   }
+   ```
+
+   After:
+   ```php
+   class MyMarkingStore implements MarkingStoreInterface
+   {
+       public function setMarking($subject, Marking $marking , array $context = [])
+       {
+       }
+   }
+   ```

@@ -31,6 +31,7 @@ use Symfony\Component\Config\Resource\ClassExistenceResource;
 use Symfony\Component\Console\DependencyInjection\AddConsoleCommandPass;
 use Symfony\Component\Debug\ErrorHandler;
 use Symfony\Component\DependencyInjection\Compiler\PassConfig;
+use Symfony\Component\DependencyInjection\Compiler\RegisterReverseContainerPass;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\EventDispatcher\DependencyInjection\RegisterListenersPass;
 use Symfony\Component\Form\DependencyInjection\FormPass;
@@ -54,7 +55,6 @@ use Symfony\Component\Translation\DependencyInjection\TranslatorPass;
 use Symfony\Component\Translation\DependencyInjection\TranslatorPathsPass;
 use Symfony\Component\Validator\DependencyInjection\AddConstraintValidatorsPass;
 use Symfony\Component\Validator\DependencyInjection\AddValidatorInitializersPass;
-use Symfony\Component\Workflow\DependencyInjection\ValidateWorkflowsPass;
 
 /**
  * Bundle.
@@ -115,7 +115,6 @@ class FrameworkBundle extends Bundle
         $container->addCompilerPass(new DataCollectorTranslatorPass());
         $container->addCompilerPass(new ControllerArgumentValueResolverPass());
         $container->addCompilerPass(new CachePoolPass(), PassConfig::TYPE_BEFORE_OPTIMIZATION, 32);
-        $this->addCompilerPassIfExists($container, ValidateWorkflowsPass::class);
         $container->addCompilerPass(new CachePoolClearerPass(), PassConfig::TYPE_AFTER_REMOVING);
         $container->addCompilerPass(new CachePoolPrunerPass(), PassConfig::TYPE_AFTER_REMOVING);
         $this->addCompilerPassIfExists($container, FormPass::class);
@@ -125,6 +124,8 @@ class FrameworkBundle extends Bundle
         $container->addCompilerPass(new TestServiceContainerRealRefPass(), PassConfig::TYPE_AFTER_REMOVING);
         $this->addCompilerPassIfExists($container, AddMimeTypeGuesserPass::class);
         $this->addCompilerPassIfExists($container, MessengerPass::class);
+        $container->addCompilerPass(new RegisterReverseContainerPass(true));
+        $container->addCompilerPass(new RegisterReverseContainerPass(false), PassConfig::TYPE_AFTER_REMOVING);
 
         if ($container->getParameter('kernel.debug')) {
             $container->addCompilerPass(new AddDebugLogProcessorPass(), PassConfig::TYPE_BEFORE_OPTIMIZATION, -32);

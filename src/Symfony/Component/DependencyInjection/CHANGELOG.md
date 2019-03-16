@@ -8,7 +8,9 @@ CHANGELOG
  * added `%env(default:param_name:...)%` processor to fallback to a parameter or to null when using `%env(default::...)%`
  * added support for deprecating aliases
  * made `ContainerParametersResource` final and not implement `Serializable` anymore
+ * added `ReverseContainer`: a container that turns services back to their ids
  * added ability to define an index for a tagged collection
+ * added ability to define an index for services in an injected service locator argument
 
 4.2.0
 -----
