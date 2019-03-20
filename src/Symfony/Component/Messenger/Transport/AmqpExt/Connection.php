@@ -36,7 +36,6 @@ class Connection
     private $connectionCredentials;
     private $exchangeConfiguration;
     private $queueConfiguration;
-    private $debug;
     private $amqpFactory;
 
     /**
@@ -54,16 +53,15 @@ class Connection
      */
     private $amqpQueue;
 
-    public function __construct(array $connectionCredentials, array $exchangeConfiguration, array $queueConfiguration, bool $debug = false, AmqpFactory $amqpFactory = null)
+    public function __construct(array $connectionCredentials, array $exchangeConfiguration, array $queueConfiguration, AmqpFactory $amqpFactory = null)
     {
         $this->connectionCredentials = $connectionCredentials;
-        $this->debug = $debug;
         $this->exchangeConfiguration = $exchangeConfiguration;
         $this->queueConfiguration = $queueConfiguration;
         $this->amqpFactory = $amqpFactory ?: new AmqpFactory();
     }
 
-    public static function fromDsn(string $dsn, array $options = [], bool $debug = false, AmqpFactory $amqpFactory = null): self
+    public static function fromDsn(string $dsn, array $options = [], AmqpFactory $amqpFactory = null): self
     {
         if (false === $parsedUrl = parse_url($dsn)) {
             throw new InvalidArgumentException(sprintf('The given AMQP DSN "%s" is invalid.', $dsn));
@@ -104,7 +102,7 @@ class Connection
             $queueOptions['arguments'] = self::normalizeQueueArguments($queueOptions['arguments']);
         }
 
-        return new self($amqpOptions, $exchangeOptions, $queueOptions, $debug, $amqpFactory);
+        return new self($amqpOptions, $exchangeOptions, $queueOptions, $amqpFactory);
     }
 
     private static function normalizeQueueArguments(array $arguments): array
@@ -129,7 +127,7 @@ class Connection
      */
     public function publish(string $body, array $headers = []): void
     {
-        if ($this->debug && $this->shouldSetup()) {
+        if ($this->shouldSetup()) {
             $this->setup();
         }
 
@@ -146,7 +144,7 @@ class Connection
      */
     public function get(): ?\AMQPEnvelope
     {
-        if ($this->debug && $this->shouldSetup()) {
+        if ($this->shouldSetup()) {
             $this->setup();
         }
 
@@ -201,10 +199,14 @@ class Connection
             $connection = $this->amqpFactory->createConnection($this->connectionCredentials);
             $connectMethod = 'true' === ($this->connectionCredentials['persistent'] ?? 'false') ? 'pconnect' : 'connect';
 
-            if (false === $connection->{$connectMethod}()) {
-                throw new \AMQPException('Could not connect to the AMQP server. Please verify the provided DSN.');
-            }
+            try {
+                $connection->{$connectMethod}();
+            } catch (\AMQPConnectionException $e) {
+                $credentials = $this->connectionCredentials;
+                $credentials['password'] = '********';
 
+                throw new \AMQPException(sprintf('Could not connect to the AMQP server. Please verify the provided DSN. (%s)', json_encode($credentials)), 0, $e);
+            }
             $this->amqpChannel = $this->amqpFactory->createChannel($connection);
         }
 
@@ -256,6 +258,14 @@ class Connection
 
     private function shouldSetup(): bool
     {
-        return !\array_key_exists('auto-setup', $this->connectionCredentials) || !\in_array($this->connectionCredentials['auto-setup'], [false, 'false'], true);
+        if (!\array_key_exists('auto-setup', $this->connectionCredentials)) {
+            return true;
+        }
+
+        if (\in_array($this->connectionCredentials['auto-setup'], [false, 'false'], true)) {
+            return false;
+        }
+
+        return true;
     }
 }

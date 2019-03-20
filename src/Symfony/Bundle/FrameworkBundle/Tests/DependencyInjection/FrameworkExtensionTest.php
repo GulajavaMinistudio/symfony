@@ -51,6 +51,7 @@ use Symfony\Component\Serializer\Serializer;
 use Symfony\Component\Translation\DependencyInjection\TranslatorPass;
 use Symfony\Component\Validator\DependencyInjection\AddConstraintValidatorsPass;
 use Symfony\Component\Workflow;
+use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 abstract class FrameworkExtensionTest extends TestCase
 {
@@ -532,9 +533,12 @@ abstract class FrameworkExtensionTest extends TestCase
         $this->assertFalse($container->hasDefinition('request.add_request_formats_listener'), '->registerRequestConfiguration() does not load request.xml when no request formats are defined');
     }
 
+    /**
+     * @group legacy
+     */
     public function testTemplating()
     {
-        $container = $this->createContainerFromFile('full');
+        $container = $this->createContainerFromFile('templating');
 
         $this->assertTrue($container->hasDefinition('templating.name_parser'), '->registerTemplatingConfiguration() loads templating.xml');
 
@@ -701,12 +705,14 @@ abstract class FrameworkExtensionTest extends TestCase
         $this->assertTrue($container->has('messenger.bus.commands'));
         $this->assertSame([], $container->getDefinition('messenger.bus.commands')->getArgument(0));
         $this->assertEquals([
+            ['id' => 'dispatch_after_current_bus'],
             ['id' => 'send_message'],
             ['id' => 'handle_message'],
         ], $container->getParameter('messenger.bus.commands.middleware'));
         $this->assertTrue($container->has('messenger.bus.events'));
         $this->assertSame([], $container->getDefinition('messenger.bus.events')->getArgument(0));
         $this->assertEquals([
+            ['id' => 'dispatch_after_current_bus'],
             ['id' => 'with_factory', 'arguments' => ['foo', true, ['bar' => 'baz']]],
             ['id' => 'send_message'],
             ['id' => 'handle_message'],
@@ -1194,14 +1200,20 @@ abstract class FrameworkExtensionTest extends TestCase
         $this->assertEquals($expectedLoaders, $loaders);
     }
 
+    /**
+     * @group legacy
+     */
     public function testAssetHelperWhenAssetsAreEnabled()
     {
-        $container = $this->createContainerFromFile('full');
+        $container = $this->createContainerFromFile('templating');
         $packages = $container->getDefinition('templating.helper.assets')->getArgument(0);
 
         $this->assertSame('assets.packages', (string) $packages);
     }
 
+    /**
+     * @group legacy
+     */
     public function testAssetHelperWhenTemplatesAreEnabledAndNoAssetsConfiguration()
     {
         $container = $this->createContainerFromFile('templating_no_assets');
@@ -1210,6 +1222,9 @@ abstract class FrameworkExtensionTest extends TestCase
         $this->assertSame('assets.packages', (string) $packages);
     }
 
+    /**
+     * @group legacy
+     */
     public function testAssetsHelperIsRemovedWhenPhpTemplatingEngineIsEnabledAndAssetsAreDisabled()
     {
         $container = $this->createContainerFromFile('templating_php_assets_disabled');
@@ -1351,6 +1366,61 @@ abstract class FrameworkExtensionTest extends TestCase
         $container = $this->createContainer(['kernel.debug' => false]);
         (new FrameworkExtension())->load([], $container);
         $this->assertFalse($container->has('disallow_search_engine_index_response_listener'), 'DisallowRobotsIndexingListener should NOT be registered');
+    }
+
+    public function testHttpClientDefaultOptions()
+    {
+        $container = $this->createContainerFromFile('http_client_default_options');
+        $this->assertTrue($container->hasDefinition('http_client'), '->registerHttpClientConfiguration() loads http_client.xml');
+
+        $defaultOptions = [
+            'query' => [],
+            'headers' => [],
+            'resolve' => [],
+        ];
+        $this->assertSame([$defaultOptions, 4], $container->getDefinition('http_client')->getArguments());
+
+        $this->assertTrue($container->hasDefinition('foo'), 'should have the "foo" service.');
+        $this->assertSame(HttpClientInterface::class, $container->getDefinition('foo')->getClass());
+        $this->assertSame([$defaultOptions, 4], $container->getDefinition('foo')->getArguments());
+    }
+
+    public function testHttpClientOverrideDefaultOptions()
+    {
+        $container = $this->createContainerFromFile('http_client_override_default_options');
+
+        $this->assertSame(['foo' => ['bar']], $container->getDefinition('http_client')->getArguments()[0]['headers']);
+        $this->assertSame(['bar' => ['baz'], 'foo' => ['bar']], $container->getDefinition('foo')->getArguments()[0]['headers']);
+    }
+
+    public function testHttpClientFullDefaultOptions()
+    {
+        $container = $this->createContainerFromFile('http_client_full_default_options');
+
+        $defaultOptions = $container->getDefinition('http_client')->getArguments()[0];
+
+        $this->assertSame('foo:bar', $defaultOptions['auth_basic']);
+        $this->assertSame(['foo' => 'bar', 'bar' => 'baz'], $defaultOptions['query']);
+        $this->assertSame(['x-powered' => ['PHP']], $defaultOptions['headers']);
+        $this->assertSame(2, $defaultOptions['max_redirects']);
+        $this->assertSame(2.0, (float) $defaultOptions['http_version']);
+        $this->assertSame('http://example.com', $defaultOptions['base_uri']);
+        $this->assertSame(['localhost' => '127.0.0.1'], $defaultOptions['resolve']);
+        $this->assertSame('proxy.org', $defaultOptions['proxy']);
+        $this->assertSame(3.5, $defaultOptions['timeout']);
+        $this->assertSame('127.0.0.1', $defaultOptions['bindto']);
+        $this->assertTrue($defaultOptions['verify_peer']);
+        $this->assertTrue($defaultOptions['verify_host']);
+        $this->assertSame('/etc/ssl/cafile', $defaultOptions['cafile']);
+        $this->assertSame('/etc/ssl', $defaultOptions['capath']);
+        $this->assertSame('/etc/ssl/cert.pem', $defaultOptions['local_cert']);
+        $this->assertSame('/etc/ssl/private_key.pem', $defaultOptions['local_pk']);
+        $this->assertSame('password123456', $defaultOptions['passphrase']);
+        $this->assertSame('RC4-SHA:TLS13-AES-128-GCM-SHA256', $defaultOptions['ciphers']);
+        $this->assertSame([
+            'pin-sha256' => ['14s5erg62v1v8471g2revg48r7==', 'jsda84hjtyd4821bgfesd215bsfg5412='],
+            'md5' => 'sdhtb481248721thbr=',
+        ], $defaultOptions['peer_fingerprint']);
     }
 
     protected function createContainer(array $data = [])

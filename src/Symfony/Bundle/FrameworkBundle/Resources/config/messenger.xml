@@ -39,6 +39,8 @@
             </call>
         </service>
 
+        <service id="messenger.middleware.dispatch_after_current_bus" class="Symfony\Component\Messenger\Middleware\DispatchAfterCurrentBusMiddleware" />
+
         <service id="messenger.middleware.validation" class="Symfony\Component\Messenger\Middleware\ValidationMiddleware">
             <argument type="service" id="validator" />
         </service>
@@ -61,7 +63,6 @@
         <service id="messenger.transport.amqp.factory" class="Symfony\Component\Messenger\Transport\AmqpExt\AmqpTransportFactory">
             <tag name="messenger.transport_factory" />
             <argument type="service" id="messenger.transport.serializer" />
-            <argument>%kernel.debug%</argument>
         </service>
     </services>
 </container>
