@@ -127,6 +127,27 @@ Security
    }
    ```
 
+Workflow
+--------
+
+ * `initial_place` is deprecated in favour of `initial_places`.
+
+   Before:
+   ```yaml
+   framework:
+      workflows:
+          article:
+              initial_place: draft
+   ```
+
+   After:
+   ```yaml
+   framework:
+      workflows:
+          article:
+              initial_places: [draft]
+   ```
+
 Yaml
 ----
 
@@ -155,4 +176,47 @@ Workflow
        {
        }
    }
+   ```
+
+ * `MultipleStateMarkingStore` is deprecated. Use `MethodMarkingStore` instead.
+
+   Before:
+   ```yaml
+   framework:
+       workflows:
+           article:
+               marking_store:
+                   type: multiple
+   ```
+
+   After:
+   ```yaml
+   framework:
+       workflows:
+           article:
+               marking_store:
+                   type: method
+
+   ```
+
+ * `SingleStateMarkingStore` is deprecated. Use `MethodMarkingStore` instead.
+
+   Before:
+   ```yaml
+   framework:
+       workflows:
+           article:
+               marking_store:
+                   type: single
+   ```
+
+   After:
+   ```yaml
+   framework:
+       workflows:
+           article:
+               marking_store:
+                   type: method
+                   arguments:
+                       - true
    ```

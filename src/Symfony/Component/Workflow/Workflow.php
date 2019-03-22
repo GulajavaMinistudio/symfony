@@ -13,13 +13,12 @@ namespace Symfony\Component\Workflow;
 
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\EventDispatcher\LegacyEventDispatcherProxy;
-use Symfony\Component\Workflow\Event\Event;
-use Symfony\Component\Workflow\Event\GuardEvent;
 use Symfony\Component\Workflow\Event\AnnounceEvent;
-use Symfony\Component\Workflow\Event\EnterEvent;
-use Symfony\Component\Workflow\Event\EnteredEvent;
-use Symfony\Component\Workflow\Event\LeaveEvent;
 use Symfony\Component\Workflow\Event\CompletedEvent;
+use Symfony\Component\Workflow\Event\EnteredEvent;
+use Symfony\Component\Workflow\Event\EnterEvent;
+use Symfony\Component\Workflow\Event\GuardEvent;
+use Symfony\Component\Workflow\Event\LeaveEvent;
 use Symfony\Component\Workflow\Event\TransitionEvent;
 use Symfony\Component\Workflow\Exception\LogicException;
 use Symfony\Component\Workflow\Exception\NotEnabledTransitionException;
@@ -61,10 +60,12 @@ class Workflow implements WorkflowInterface
 
         // check if the subject is already in the workflow
         if (!$marking->getPlaces()) {
-            if (!$this->definition->getInitialPlace()) {
+            if (!$this->definition->getInitialPlaces()) {
                 throw new LogicException(sprintf('The Marking is empty and there is no initial place for workflow "%s".', $this->name));
             }
-            $marking->mark($this->definition->getInitialPlace());
+            foreach ($this->definition->getInitialPlaces() as $place) {
+                $marking->mark($place);
+            }
 
             // update the subject with the new marking
             $this->markingStore->setMarking($subject, $marking);

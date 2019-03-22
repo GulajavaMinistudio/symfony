@@ -55,6 +55,7 @@ use Symfony\Component\DependencyInjection\ServiceLocator;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
 use Symfony\Component\Finder\Finder;
+use Symfony\Component\Form\ChoiceList\Factory\CachingFactoryDecorator;
 use Symfony\Component\Form\FormTypeExtensionInterface;
 use Symfony\Component\Form\FormTypeGuesserInterface;
 use Symfony\Component\Form\FormTypeInterface;
@@ -440,6 +441,11 @@ class FrameworkExtension extends Extension
         if (!class_exists(Translator::class)) {
             $container->removeDefinition('form.type_extension.upload.validator');
         }
+        if (!method_exists(CachingFactoryDecorator::class, 'reset')) {
+            $container->getDefinition('form.choice_list_factory.cached')
+                ->clearTag('kernel.reset')
+            ;
+        }
     }
 
     private function registerEsiConfiguration(array $config, ContainerBuilder $container, XmlFileLoader $loader)
@@ -615,14 +621,14 @@ class FrameworkExtension extends Extension
 
             // Create places
             $places = array_column($workflow['places'], 'name');
-            $initialPlace = $workflow['initial_place'] ?? null;
+            $initialPlaces = $workflow['initial_places'] ?? $workflow['initial_place'] ?? [];
 
             // Create a Definition
             $definitionDefinition = new Definition(Workflow\Definition::class);
             $definitionDefinition->setPublic(false);
             $definitionDefinition->addArgument($places);
             $definitionDefinition->addArgument($transitions);
-            $definitionDefinition->addArgument($initialPlace);
+            $definitionDefinition->addArgument($initialPlaces);
             $definitionDefinition->addArgument($metadataStoreDefinition);
 
             // Create MarkingStore
@@ -670,7 +676,7 @@ class FrameworkExtension extends Extension
                     ->addTransitions(array_map(function (Reference $ref) use ($container): Workflow\Transition {
                         return $container->get((string) $ref);
                     }, $transitions))
-                    ->setInitialPlace($initialPlace)
+                    ->setInitialPlace($initialPlaces)
                     ->build()
                 ;
                 $validator->validate($realDefinition, $name);
