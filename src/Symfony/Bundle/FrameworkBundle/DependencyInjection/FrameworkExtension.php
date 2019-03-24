@@ -1616,8 +1616,14 @@ class FrameworkExtension extends Extension
         }
 
         $defaultMiddleware = [
-            'before' => [['id' => 'dispatch_after_current_bus']],
-            'after' => [['id' => 'send_message'], ['id' => 'handle_message']],
+            'before' => [
+                ['id' => 'add_bus_name_stamp_middleware'],
+                ['id' => 'dispatch_after_current_bus'],
+            ],
+            'after' => [
+                ['id' => 'send_message'],
+                ['id' => 'handle_message'],
+            ],
         ];
         foreach ($config['buses'] as $busId => $bus) {
             $middleware = $bus['middleware'];
@@ -1628,6 +1634,10 @@ class FrameworkExtension extends Extension
                 } else {
                     unset($defaultMiddleware['after'][1]['arguments']);
                 }
+
+                // argument to add_bus_name_stamp_middleware
+                $defaultMiddleware['before'][0]['arguments'] = [$busId];
+
                 $middleware = array_merge($defaultMiddleware['before'], $middleware, $defaultMiddleware['after']);
             }
 
@@ -1653,6 +1663,7 @@ class FrameworkExtension extends Extension
         }
 
         $senderAliases = [];
+        $transportRetryReferences = [];
         foreach ($config['transports'] as $name => $transport) {
             if (0 === strpos($transport['dsn'], 'amqp://') && !$container->hasDefinition('messenger.transport.amqp.factory')) {
                 throw new LogicException('The default AMQP transport is not available. Make sure you have installed and enabled the Serializer component. Try enabling it or running "composer require symfony/serializer-pack".');
@@ -1665,6 +1676,21 @@ class FrameworkExtension extends Extension
             ;
             $container->setDefinition($transportId = 'messenger.transport.'.$name, $transportDefinition);
             $senderAliases[$name] = $transportId;
+
+            if (null !== $transport['retry_strategy']['service']) {
+                $transportRetryReferences[$name] = new Reference($transport['retry_strategy']['service']);
+            } else {
+                $retryServiceId = sprintf('messenger.retry.multiplier_retry_strategy.%s', $name);
+                $retryDefinition = new ChildDefinition('messenger.retry.abstract_multiplier_retry_strategy');
+                $retryDefinition
+                    ->replaceArgument(0, $transport['retry_strategy']['max_retries'])
+                    ->replaceArgument(1, $transport['retry_strategy']['delay'])
+                    ->replaceArgument(2, $transport['retry_strategy']['multiplier'])
+                    ->replaceArgument(3, $transport['retry_strategy']['max_delay']);
+                $container->setDefinition($retryServiceId, $retryDefinition);
+
+                $transportRetryReferences[$name] = new Reference($retryServiceId);
+            }
         }
 
         $messageToSendersMapping = [];
@@ -1686,6 +1712,9 @@ class FrameworkExtension extends Extension
             ->replaceArgument(0, $messageToSendersMapping)
             ->replaceArgument(1, $messagesToSendAndHandle)
         ;
+
+        $container->getDefinition('messenger.retry_strategy_locator')
+            ->replaceArgument(0, $transportRetryReferences);
     }
 
     private function registerCacheConfiguration(array $config, ContainerBuilder $container)

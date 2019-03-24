@@ -251,6 +251,7 @@ class MessengerPassTest extends TestCase
         $container->register('console.command.messenger_consume_messages', ConsumeMessagesCommand::class)->setArguments([
             null,
             new Reference('messenger.receiver_locator'),
+            new Reference('messenger.retry_strategy_locator'),
             null,
             null,
             null,
@@ -262,7 +263,6 @@ class MessengerPassTest extends TestCase
         (new MessengerPass())->process($container);
 
         $this->assertSame(['amqp', 'dummy'], $container->getDefinition('console.command.messenger_consume_messages')->getArgument(3));
-        $this->assertSame(['message_bus'], $container->getDefinition('console.command.messenger_consume_messages')->getArgument(4));
     }
 
     public function testItShouldNotThrowIfGeneratorIsReturnedInsteadOfArray()
@@ -603,6 +603,14 @@ class DummyReceiver implements ReceiverInterface
     }
 
     public function stop(): void
+    {
+    }
+
+    public function ack(Envelope $envelope): void
+    {
+    }
+
+    public function reject(Envelope $envelope): void
     {
     }
 }
