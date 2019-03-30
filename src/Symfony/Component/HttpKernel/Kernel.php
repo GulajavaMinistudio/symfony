@@ -83,13 +83,12 @@ abstract class Kernel implements KernelInterface, RebootableInterface, Terminabl
     const END_OF_MAINTENANCE = '01/2020';
     const END_OF_LIFE = '07/2020';
 
-    public function __construct(string $environment, bool $debug, string $projectDir = null)
+    public function __construct(string $environment, bool $debug)
     {
         $this->environment = $environment;
         $this->debug = $debug;
         $this->rootDir = $this->getRootDir(false);
         $this->name = $this->getName(false);
-        $this->projectDir = $projectDir;
     }
 
     public function __clone()
@@ -827,7 +826,6 @@ abstract class Kernel implements KernelInterface, RebootableInterface, Terminabl
 
         $output .= $rawChunk;
 
-        // PHP 7 memory manager will not release after token_get_all(), see https://bugs.php.net/70098
         unset($tokens, $rawChunk);
         gc_mem_caches();
 
