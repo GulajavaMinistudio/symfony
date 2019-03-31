@@ -74,10 +74,10 @@ use Symfony\Component\Lock\LockInterface;
 use Symfony\Component\Lock\Store\FlockStore;
 use Symfony\Component\Lock\Store\StoreFactory;
 use Symfony\Component\Lock\StoreInterface;
+use Symfony\Component\Mailer\Mailer;
 use Symfony\Component\Messenger\Handler\MessageHandlerInterface;
 use Symfony\Component\Messenger\MessageBus;
 use Symfony\Component\Messenger\MessageBusInterface;
-use Symfony\Component\Messenger\Transport\Serialization\SerializerInterface;
 use Symfony\Component\Messenger\Transport\TransportFactoryInterface;
 use Symfony\Component\Messenger\Transport\TransportInterface;
 use Symfony\Component\Mime\MimeTypeGuesserInterface;
@@ -109,6 +109,7 @@ use Symfony\Component\Stopwatch\Stopwatch;
 use Symfony\Component\Translation\Command\XliffLintCommand as BaseXliffLintCommand;
 use Symfony\Component\Translation\Translator;
 use Symfony\Component\Validator\ConstraintValidatorInterface;
+use Symfony\Component\Validator\Mapping\Loader\PropertyInfoLoader;
 use Symfony\Component\Validator\ObjectInitializerInterface;
 use Symfony\Component\WebLink\HttpHeaderSerializer;
 use Symfony\Component\Workflow;
@@ -283,7 +284,8 @@ class FrameworkExtension extends Extension
             $container->removeDefinition('console.command.messenger_setup_transports');
         }
 
-        $this->registerValidationConfiguration($config['validation'], $container, $loader);
+        $propertyInfoEnabled = $this->isConfigEnabled($container, $config['property_info']);
+        $this->registerValidationConfiguration($config['validation'], $container, $loader, $propertyInfoEnabled);
         $this->registerEsiConfiguration($config['esi'], $container, $loader);
         $this->registerSsiConfiguration($config['ssi'], $container, $loader);
         $this->registerFragmentsConfiguration($config['fragments'], $container, $loader);
@@ -304,7 +306,7 @@ class FrameworkExtension extends Extension
             $this->registerSerializerConfiguration($config['serializer'], $container, $loader);
         }
 
-        if ($this->isConfigEnabled($container, $config['property_info'])) {
+        if ($propertyInfoEnabled) {
             $this->registerPropertyInfoConfiguration($container, $loader);
         }
 
@@ -314,6 +316,10 @@ class FrameworkExtension extends Extension
 
         if ($this->isConfigEnabled($container, $config['http_client'])) {
             $this->registerHttpClientConfiguration($config['http_client'], $container, $loader);
+        }
+
+        if ($this->isConfigEnabled($container, $config['mailer'])) {
+            $this->registerMailerConfiguration($config['mailer'], $container, $loader);
         }
 
         if ($this->isConfigEnabled($container, $config['web_link'])) {
@@ -1161,7 +1167,7 @@ class FrameworkExtension extends Extension
         }
     }
 
-    private function registerValidationConfiguration(array $config, ContainerBuilder $container, XmlFileLoader $loader)
+    private function registerValidationConfiguration(array $config, ContainerBuilder $container, XmlFileLoader $loader, bool $propertyInfoEnabled)
     {
         if (!$this->validatorConfigEnabled = $this->isConfigEnabled($container, $config)) {
             return;
@@ -1211,6 +1217,11 @@ class FrameworkExtension extends Extension
 
         if (!$container->getParameter('kernel.debug')) {
             $validatorBuilder->addMethodCall('setMetadataCache', [new Reference('validator.mapping.cache.symfony')]);
+        }
+
+        $container->setParameter('validator.auto_mapping', $config['auto_mapping']);
+        if (!$propertyInfoEnabled || !$config['auto_mapping'] || !class_exists(PropertyInfoLoader::class)) {
+            $container->removeDefinition('validator.property_info_loader');
         }
     }
 
@@ -1592,28 +1603,6 @@ class FrameworkExtension extends Extension
 
         $loader->load('messenger.xml');
 
-        if (empty($config['transports'])) {
-            $container->removeDefinition('messenger.transport.symfony_serializer');
-            $container->removeDefinition('messenger.transport.amqp.factory');
-        } else {
-            if ('messenger.transport.symfony_serializer' === $config['serializer']['id']) {
-                if (!$this->isConfigEnabled($container, $serializerConfig)) {
-                    throw new LogicException('The Messenger serializer cannot be enabled as the Serializer support is not available. Try enabling it or running "composer require symfony/serializer-pack".');
-                }
-
-                $container->getDefinition('messenger.transport.symfony_serializer')
-                    ->replaceArgument(1, $config['serializer']['format'])
-                    ->replaceArgument(2, $config['serializer']['context']);
-            }
-
-            if ($config['serializer']['id']) {
-                $container->setAlias('messenger.transport.serializer', $config['serializer']['id']);
-            } else {
-                $container->removeDefinition('messenger.transport.amqp.factory');
-                $container->removeDefinition(SerializerInterface::class);
-            }
-        }
-
         if (null === $config['default_bus'] && 1 === \count($config['buses'])) {
             $config['default_bus'] = key($config['buses']);
         }
@@ -1665,16 +1654,24 @@ class FrameworkExtension extends Extension
             }
         }
 
+        if (empty($config['transports'])) {
+            $container->removeDefinition('messenger.transport.symfony_serializer');
+            $container->removeDefinition('messenger.transport.amqp.factory');
+        } else {
+            $container->getDefinition('messenger.transport.symfony_serializer')
+                ->replaceArgument(1, $config['symfony_serializer']['format'])
+                ->replaceArgument(2, $config['symfony_serializer']['context']);
+            $container->setAlias('messenger.default_serializer', $config['default_serializer']);
+        }
+
         $senderAliases = [];
         $transportRetryReferences = [];
         foreach ($config['transports'] as $name => $transport) {
-            if (0 === strpos($transport['dsn'], 'amqp://') && !$container->hasDefinition('messenger.transport.amqp.factory')) {
-                throw new LogicException('The default AMQP transport is not available. Make sure you have installed and enabled the Serializer component. Try enabling it or running "composer require symfony/serializer-pack".');
-            }
+            $serializerId = $transport['serializer'] ?? 'messenger.default_serializer';
 
             $transportDefinition = (new Definition(TransportInterface::class))
                 ->setFactory([new Reference('messenger.transport_factory'), 'createTransport'])
-                ->setArguments([$transport['dsn'], $transport['options']])
+                ->setArguments([$transport['dsn'], $transport['options'], new Reference($serializerId)])
                 ->addTag('messenger.receiver', ['alias' => $name])
             ;
             $container->setDefinition($transportId = 'messenger.transport.'.$name, $transportDefinition);
@@ -1852,6 +1849,16 @@ class FrameworkExtension extends Extension
                 $container->registerAliasForArgument('psr18.'.$name, ClientInterface::class, $name);
             }
         }
+    }
+
+    private function registerMailerConfiguration(array $config, ContainerBuilder $container, XmlFileLoader $loader)
+    {
+        if (!class_exists(Mailer::class)) {
+            throw new LogicException('Mailer support cannot be enabled as the component is not installed. Try running "composer require symfony/mailer".');
+        }
+
+        $loader->load('mailer.xml');
+        $container->getDefinition('mailer.transport')->setArgument(0, $config['dsn']);
     }
 
     /**

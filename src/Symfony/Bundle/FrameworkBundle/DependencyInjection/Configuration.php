@@ -26,6 +26,7 @@ use Symfony\Component\HttpClient\HttpClient;
 use Symfony\Component\HttpFoundation\Cookie;
 use Symfony\Component\Lock\Lock;
 use Symfony\Component\Lock\Store\SemaphoreStore;
+use Symfony\Component\Mailer\Mailer;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\PropertyInfo\PropertyInfoExtractorInterface;
 use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
@@ -112,6 +113,7 @@ class Configuration implements ConfigurationInterface
         $this->addMessengerSection($rootNode);
         $this->addRobotsIndexSection($rootNode);
         $this->addHttpClientSection($rootNode);
+        $this->addMailerSection($rootNode);
 
         return $treeBuilder;
     }
@@ -802,6 +804,45 @@ class Configuration implements ConfigurationInterface
                                 ->end()
                             ->end()
                         ->end()
+                        ->arrayNode('auto_mapping')
+                            ->useAttributeAsKey('namespace')
+                            ->normalizeKeys(false)
+                            ->beforeNormalization()
+                                ->ifArray()
+                                ->then(function (array $values): array {
+                                    foreach ($values as $k => $v) {
+                                        if (isset($v['service'])) {
+                                            continue;
+                                        }
+
+                                        if (isset($v['namespace'])) {
+                                            $values[$k]['services'] = [];
+                                            continue;
+                                        }
+
+                                        if (!\is_array($v)) {
+                                            $values[$v]['services'] = [];
+                                            unset($values[$k]);
+                                            continue;
+                                        }
+
+                                        $tmp = $v;
+                                        unset($values[$k]);
+                                        $values[$k]['services'] = $tmp;
+                                    }
+
+                                    return $values;
+                                })
+                            ->end()
+                            ->arrayPrototype()
+                                ->fixXmlConfig('service')
+                                ->children()
+                                    ->arrayNode('services')
+                                        ->prototype('scalar')->end()
+                                    ->end()
+                                ->end()
+                            ->end()
+                        ->end()
                     ->end()
                 ->end()
             ->end()
@@ -1066,29 +1107,19 @@ class Configuration implements ConfigurationInterface
                                 ->end()
                             ->end()
                         ->end()
-                        ->arrayNode('serializer')
+                        ->scalarNode('default_serializer')
+                            ->defaultValue('messenger.transport.native_php_serializer')
+                            ->info('Service id to use as the default serializer for the transports.')
+                        ->end()
+                        ->arrayNode('symfony_serializer')
                             ->addDefaultsIfNotSet()
-                            ->beforeNormalization()
-                                ->always()
-                                ->then(function ($config) {
-                                    if (false === $config) {
-                                        return ['id' => null];
-                                    }
-
-                                    if (\is_string($config)) {
-                                        return ['id' => $config];
-                                    }
-
-                                    return $config;
-                                })
-                            ->end()
                             ->children()
-                                ->scalarNode('id')->defaultValue('messenger.transport.native_php_serializer')->end()
-                                ->scalarNode('format')->defaultValue('json')->end()
+                                ->scalarNode('format')->defaultValue('json')->info('Serialization format for the messenger.transport.symfony_serializer service (which is not the serializer used by default).')->end()
                                 ->arrayNode('context')
                                     ->normalizeKeys(false)
                                     ->useAttributeAsKey('name')
                                     ->defaultValue([])
+                                    ->info('Context array for the messenger.transport.symfony_serializer service (which is not the serializer used by default).')
                                     ->prototype('variable')->end()
                                 ->end()
                             ->end()
@@ -1105,6 +1136,7 @@ class Configuration implements ConfigurationInterface
                                 ->fixXmlConfig('option')
                                 ->children()
                                     ->scalarNode('dsn')->end()
+                                    ->scalarNode('serializer')->defaultNull()->info('Service id of a custom serializer to use.')->end()
                                     ->arrayNode('options')
                                         ->normalizeKeys(false)
                                         ->defaultValue([])
@@ -1339,6 +1371,21 @@ class Configuration implements ConfigurationInterface
                             ->variableNode('pin-sha256')->end()
                             ->variableNode('md5')->end()
                         ->end()
+                    ->end()
+                ->end()
+            ->end()
+        ;
+    }
+
+    private function addMailerSection(ArrayNodeDefinition $rootNode)
+    {
+        $rootNode
+            ->children()
+                ->arrayNode('mailer')
+                    ->info('Mailer configuration')
+                    ->{!class_exists(FullStack::class) && class_exists(Mailer::class) ? 'canBeDisabled' : 'canBeEnabled'}()
+                    ->children()
+                        ->scalarNode('dsn')->defaultValue('smtp://null')->end()
                     ->end()
                 ->end()
             ->end()
