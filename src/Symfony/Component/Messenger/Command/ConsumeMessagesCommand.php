@@ -11,6 +11,7 @@
 
 namespace Symfony\Component\Messenger\Command;
 
+use Psr\Cache\CacheItemPoolInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Command\Command;
@@ -18,6 +19,7 @@ use Symfony\Component\Console\Exception\RuntimeException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\ChoiceQuestion;
 use Symfony\Component\Console\Style\SymfonyStyle;
@@ -25,6 +27,7 @@ use Symfony\Component\Messenger\RoutableMessageBus;
 use Symfony\Component\Messenger\Worker;
 use Symfony\Component\Messenger\Worker\StopWhenMemoryUsageIsExceededWorker;
 use Symfony\Component\Messenger\Worker\StopWhenMessageCountIsExceededWorker;
+use Symfony\Component\Messenger\Worker\StopWhenRestartSignalIsReceived;
 use Symfony\Component\Messenger\Worker\StopWhenTimeLimitIsReachedWorker;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
@@ -43,6 +46,8 @@ class ConsumeMessagesCommand extends Command
     private $receiverNames;
     private $retryStrategyLocator;
     private $eventDispatcher;
+    /** @var CacheItemPoolInterface|null */
+    private $restartSignalCachePool;
 
     public function __construct(ContainerInterface $busLocator, ContainerInterface $receiverLocator, LoggerInterface $logger = null, array $receiverNames = [], /* ContainerInterface */ $retryStrategyLocator = null, EventDispatcherInterface $eventDispatcher = null)
     {
@@ -60,6 +65,11 @@ class ConsumeMessagesCommand extends Command
         $this->eventDispatcher = $eventDispatcher;
 
         parent::__construct();
+    }
+
+    public function setCachePoolForRestartSignal(CacheItemPoolInterface $restartSignalCachePool)
+    {
+        $this->restartSignalCachePool = $restartSignalCachePool;
     }
 
     /**
@@ -139,7 +149,7 @@ EOF
     /**
      * {@inheritdoc}
      */
-    protected function execute(InputInterface $input, OutputInterface $output): void
+    protected function execute(InputInterface $input, OutputInterface $output)
     {
         if (false !== strpos($input->getFirstArgument(), ':consume-')) {
             $message = 'The use of the "messenger:consume-messages" command is deprecated since version 4.3 and will be removed in 5.0. Use "messenger:consume" instead.';
@@ -188,6 +198,11 @@ EOF
         if ($timeLimit = $input->getOption('time-limit')) {
             $stopsWhen[] = "been running for {$timeLimit}s";
             $worker = new StopWhenTimeLimitIsReachedWorker($worker, $timeLimit, $this->logger);
+        }
+
+        if (null !== $this->restartSignalCachePool) {
+            $stopsWhen[] = 'received a stop signal via the messenger:stop-workers command';
+            $worker = new StopWhenRestartSignalIsReceived($worker, $this->restartSignalCachePool, $this->logger);
         }
 
         $io = new SymfonyStyle($input, $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output);

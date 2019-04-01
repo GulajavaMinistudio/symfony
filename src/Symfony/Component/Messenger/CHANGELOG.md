@@ -4,6 +4,14 @@ CHANGELOG
 4.3.0
 -----
 
+ * [BC BREAK] The `Envelope::__construct()` signature changed:
+   you can no longer pass an unlimited number of stamps as the second,
+   third, fourth, arguments etc: stamps are now an array passed to the
+   second argument.
+ * [BC BREAK] The `MessageBusInterface::dispatch()` signature changed:
+   a second argument `array $stamps = []` was added.
+ * Added new `messenger:stop-workers` command that sends a signal
+   to stop all `messenger:consume` workers.
  * [BC BREAK] The `TransportFactoryInterface::createTransport()` signature
    changed: a required 3rd `SerializerInterface` argument was added.
  * Added a new `SyncTransport` along with `ForceCallHandlersStamp` to
@@ -59,8 +67,8 @@ CHANGELOG
  * [BC BREAK] The Amqp Transport now automatically sets up the exchanges
    and queues by default. Previously, this was done when in "debug" mode
    only. Pass the `auto_setup` connection option to control this.
-
  * Added a `SetupTransportsCommand` command to setup the transports
+ * Added a Doctrine transport. For example, use the `doctrine://default` DSN (this uses the `default` Doctrine entity manager)
 
 4.2.0
 -----
