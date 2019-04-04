@@ -37,26 +37,26 @@ class MockResponse implements ResponseInterface
      *                                       yielding an empty string simulates a timeout,
      *                                       exceptions are turned to TransportException
      *
-     * @see ResponseInterface::getInfo() for possible info, e.g. "raw_headers"
+     * @see ResponseInterface::getInfo() for possible info, e.g. "response_headers"
      */
     public function __construct($body = '', array $info = [])
     {
         $this->body = \is_iterable($body) ? $body : (string) $body;
         $this->info = $info + $this->info;
 
-        if (!isset($info['raw_headers'])) {
+        if (!isset($info['response_headers'])) {
             return;
         }
 
-        $rawHeaders = [];
+        $responseHeaders = [];
 
-        foreach ($info['raw_headers'] as $k => $v) {
+        foreach ($info['response_headers'] as $k => $v) {
             foreach ((array) $v as $v) {
-                $rawHeaders[] = (\is_string($k) ? $k.': ' : '').$v;
+                $responseHeaders[] = (\is_string($k) ? $k.': ' : '').$v;
             }
         }
 
-        $this->info['raw_headers'] = $rawHeaders;
+        $this->info['response_headers'] = $responseHeaders;
     }
 
     /**
@@ -110,6 +110,10 @@ class MockResponse implements ResponseInterface
         $response->info['http_code'] = 0;
         $response->info['user_data'] = $options['user_data'] ?? null;
         $response->info['url'] = $url;
+
+        if ($mock instanceof self) {
+            $mock->requestOptions = $response->requestOptions;
+        }
 
         self::writeRequest($response, $options, $mock);
         $response->body[] = [$options, $mock];
@@ -239,8 +243,8 @@ class MockResponse implements ResponseInterface
         // populate info related to headers
         $info = $mock->getInfo() ?: [];
         $response->info['http_code'] = ($info['http_code'] ?? 0) ?: $mock->getStatusCode(false) ?: 200;
-        $response->addRawHeaders($info['raw_headers'] ?? [], $response->info, $response->headers);
-        $dlSize = (int) ($response->headers['content-length'][0] ?? 0);
+        $response->addResponseHeaders($info['response_headers'] ?? [], $response->info, $response->headers);
+        $dlSize = isset($response->headers['content-encoding']) ? 0 : (int) ($response->headers['content-length'][0] ?? 0);
 
         $response->info = [
             'start_time' => $response->info['start_time'],
@@ -282,7 +286,7 @@ class MockResponse implements ResponseInterface
         // "notify" completion
         $onProgress($offset, $dlSize, $response->info);
 
-        if (isset($response->headers['content-length']) && $offset !== $dlSize) {
+        if ($dlSize && $offset !== $dlSize) {
             throw new TransportException(sprintf('Transfer closed with %s bytes remaining to read.', $dlSize - $offset));
         }
     }
