@@ -280,6 +280,7 @@ class FrameworkExtension extends Extension
         } else {
             $container->removeDefinition('console.command.messenger_consume_messages');
             $container->removeDefinition('console.command.messenger_debug');
+            $container->removeDefinition('console.command.messenger_stop_workers');
             $container->removeDefinition('console.command.messenger_setup_transports');
         }
 
@@ -630,21 +631,28 @@ class FrameworkExtension extends Extension
 
             // Create places
             $places = array_column($workflow['places'], 'name');
-            $initialPlaces = $workflow['initial_places'] ?? $workflow['initial_place'] ?? [];
+            $initialMarking = $workflow['initial_marking'] ?? $workflow['initial_place'] ?? [];
 
             // Create a Definition
             $definitionDefinition = new Definition(Workflow\Definition::class);
             $definitionDefinition->setPublic(false);
             $definitionDefinition->addArgument($places);
             $definitionDefinition->addArgument($transitions);
-            $definitionDefinition->addArgument($initialPlaces);
+            $definitionDefinition->addArgument($initialMarking);
             $definitionDefinition->addArgument($metadataStoreDefinition);
 
             // Create MarkingStore
             if (isset($workflow['marking_store']['type'])) {
                 $markingStoreDefinition = new ChildDefinition('workflow.marking_store.'.$workflow['marking_store']['type']);
-                foreach ($workflow['marking_store']['arguments'] as $argument) {
-                    $markingStoreDefinition->addArgument($argument);
+                if ('method' === $workflow['marking_store']['type']) {
+                    $markingStoreDefinition->setArguments([
+                        'state_machine' === $type, //single state
+                        $workflow['marking_store']['property'],
+                    ]);
+                } else {
+                    foreach ($workflow['marking_store']['arguments'] as $argument) {
+                        $markingStoreDefinition->addArgument($argument);
+                    }
                 }
             } elseif (isset($workflow['marking_store']['service'])) {
                 $markingStoreDefinition = new Reference($workflow['marking_store']['service']);
@@ -669,10 +677,6 @@ class FrameworkExtension extends Extension
                 case 'state_machine' === $workflow['type']:
                     $validator = new Workflow\Validator\StateMachineValidator();
                     break;
-                case 'method' === ($workflow['marking_store']['type'] ?? null):
-                    $singlePlace = $workflow['marking_store']['arguments'][0] ?? false;
-                    $validator = new Workflow\Validator\WorkflowValidator($singlePlace);
-                    break;
                 case 'single_state' === ($workflow['marking_store']['type'] ?? null):
                     $validator = new Workflow\Validator\WorkflowValidator(true);
                     break;
@@ -680,12 +684,13 @@ class FrameworkExtension extends Extension
                     $validator = new Workflow\Validator\WorkflowValidator(false);
                     break;
             }
+
             if ($validator) {
                 $realDefinition = (new Workflow\DefinitionBuilder($places))
                     ->addTransitions(array_map(function (Reference $ref) use ($container): Workflow\Transition {
                         return $container->get((string) $ref);
                     }, $transitions))
-                    ->setInitialPlace($initialPlaces)
+                    ->setInitialPlace($initialMarking)
                     ->build()
                 ;
                 $validator->validate($realDefinition, $name);
@@ -1082,6 +1087,7 @@ class FrameworkExtension extends Extension
         // Discover translation directories
         $dirs = [];
         $transPaths = [];
+        $nonExistingDirs = [];
         if (class_exists('Symfony\Component\Validator\Validation')) {
             $r = new \ReflectionClass('Symfony\Component\Validator\Validation');
 
@@ -1100,18 +1106,21 @@ class FrameworkExtension extends Extension
         $defaultDir = $container->getParameterBag()->resolveValue($config['default_path']);
         $rootDir = $container->getParameter('kernel.root_dir');
         foreach ($container->getParameter('kernel.bundles_metadata') as $name => $bundle) {
-            if ($container->fileExists($dir = $bundle['path'].'/Resources/translations')) {
+            if (\is_dir($dir = $bundle['path'].'/Resources/translations')) {
                 $dirs[] = $dir;
+            } else {
+                $nonExistingDirs[] = $dir;
             }
-            if ($container->fileExists($dir = $rootDir.sprintf('/Resources/%s/translations', $name))) {
+            if (\is_dir($dir = $rootDir.sprintf('/Resources/%s/translations', $name))) {
                 @trigger_error(sprintf('Translations directory "%s" is deprecated since Symfony 4.2, use "%s" instead.', $dir, $defaultDir), E_USER_DEPRECATED);
-
                 $dirs[] = $dir;
+            } else {
+                $nonExistingDirs[] = $dir;
             }
         }
 
         foreach ($config['paths'] as $dir) {
-            if ($container->fileExists($dir)) {
+            if (\is_dir($dir)) {
                 $dirs[] = $transPaths[] = $dir;
             } else {
                 throw new \UnexpectedValueException(sprintf('%s defined in translator.paths does not exist or is not a directory', $dir));
@@ -1126,15 +1135,20 @@ class FrameworkExtension extends Extension
             $container->getDefinition('console.command.translation_update')->replaceArgument(6, $transPaths);
         }
 
-        if ($container->fileExists($defaultDir)) {
+        if (\is_dir($defaultDir)) {
             $dirs[] = $defaultDir;
+        } else {
+            $nonExistingDirs[] = $defaultDir;
         }
-        if ($container->fileExists($dir = $rootDir.'/Resources/translations')) {
+
+        if (\is_dir($dir = $rootDir.'/Resources/translations')) {
             if ($dir !== $defaultDir) {
                 @trigger_error(sprintf('Translations directory "%s" is deprecated since Symfony 4.2, use "%s" instead.', $dir, $defaultDir), E_USER_DEPRECATED);
             }
 
             $dirs[] = $dir;
+        } else {
+            $nonExistingDirs[] = $dir;
         }
 
         // Register translation resources
@@ -1161,7 +1175,10 @@ class FrameworkExtension extends Extension
 
             $options = array_merge(
                 $translator->getArgument(4),
-                ['resource_files' => $files]
+                [
+                    'resource_files' => $files,
+                    'scanned_directories' => \array_merge($dirs, $nonExistingDirs),
+                ]
             );
 
             $translator->replaceArgument(4, $options);
@@ -1224,6 +1241,11 @@ class FrameworkExtension extends Extension
         if (!$propertyInfoEnabled || !$config['auto_mapping'] || !class_exists(PropertyInfoLoader::class)) {
             $container->removeDefinition('validator.property_info_loader');
         }
+
+        $container
+            ->getDefinition('validator.not_compromised_password')
+            ->setArgument(2, $config['disable_not_compromised_password'])
+        ;
     }
 
     private function registerValidatorMapping(ContainerBuilder $container, array $config, array &$files)
@@ -1360,6 +1382,7 @@ class FrameworkExtension extends Extension
             ->getDefinition('property_accessor')
             ->replaceArgument(0, $config['magic_call'])
             ->replaceArgument(1, $config['throw_exception_on_invalid_index'])
+            ->replaceArgument(3, $config['throw_exception_on_invalid_property_path'])
         ;
     }
 

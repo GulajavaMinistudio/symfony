@@ -26,19 +26,23 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
  *
  * @author Kévin Dunglas <dunglas@gmail.com>
  */
-class NotPwnedValidator extends ConstraintValidator
+class NotCompromisedPasswordValidator extends ConstraintValidator
 {
     private const RANGE_API = 'https://api.pwnedpasswords.com/range/%s';
 
     private $httpClient;
+    private $charset;
+    private $disabled;
 
-    public function __construct(HttpClientInterface $httpClient = null)
+    public function __construct(HttpClientInterface $httpClient = null, string $charset = 'UTF-8', bool $disabled = false)
     {
         if (null === $httpClient && !class_exists(HttpClient::class)) {
             throw new \LogicException(sprintf('The "%s" class requires the "HttpClient" component. Try running "composer require symfony/http-client".', self::class));
         }
 
         $this->httpClient = $httpClient ?? HttpClient::create();
+        $this->charset = $charset;
+        $this->disabled = $disabled;
     }
 
     /**
@@ -48,8 +52,12 @@ class NotPwnedValidator extends ConstraintValidator
      */
     public function validate($value, Constraint $constraint)
     {
-        if (!$constraint instanceof NotPwned) {
-            throw new UnexpectedTypeException($constraint, NotPwned::class);
+        if (!$constraint instanceof NotCompromisedPassword) {
+            throw new UnexpectedTypeException($constraint, NotCompromisedPassword::class);
+        }
+
+        if ($this->disabled) {
+            return;
         }
 
         if (null !== $value && !is_scalar($value) && !(\is_object($value) && method_exists($value, '__toString'))) {
@@ -59,6 +67,10 @@ class NotPwnedValidator extends ConstraintValidator
         $value = (string) $value;
         if ('' === $value) {
             return;
+        }
+
+        if ('UTF-8' !== $this->charset) {
+            $value = mb_convert_encoding($value, 'UTF-8', $this->charset);
         }
 
         $hash = strtoupper(sha1($value));
@@ -80,7 +92,7 @@ class NotPwnedValidator extends ConstraintValidator
 
             if ($hashPrefix.$hashSuffix === $hash && $constraint->threshold <= (int) $count) {
                 $this->context->buildViolation($constraint->message)
-                    ->setCode(NotPwned::PWNED_ERROR)
+                    ->setCode(NotCompromisedPassword::COMPROMISED_PASSWORD_ERROR)
                     ->addViolation();
 
                 return;

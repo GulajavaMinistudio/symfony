@@ -25,6 +25,8 @@ use Symfony\Component\Cache\Adapter\DoctrineAdapter;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 use Symfony\Component\Cache\Adapter\ProxyAdapter;
 use Symfony\Component\Cache\Adapter\RedisAdapter;
+use Symfony\Component\Config\Resource\DirectoryResource;
+use Symfony\Component\Config\Resource\FileExistenceResource;
 use Symfony\Component\DependencyInjection\ChildDefinition;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\Compiler\ResolveInstanceofConditionalsPass;
@@ -80,6 +82,7 @@ abstract class FrameworkExtensionTest extends TestCase
         $def = $container->getDefinition('property_accessor');
         $this->assertFalse($def->getArgument(0));
         $this->assertFalse($def->getArgument(1));
+        $this->assertTrue($def->getArgument(3));
     }
 
     public function testPropertyAccessWithOverriddenValues()
@@ -88,6 +91,7 @@ abstract class FrameworkExtensionTest extends TestCase
         $def = $container->getDefinition('property_accessor');
         $this->assertTrue($def->getArgument(0));
         $this->assertTrue($def->getArgument(1));
+        $this->assertFalse($def->getArgument(3));
     }
 
     public function testPropertyAccessCache()
@@ -273,15 +277,18 @@ abstract class FrameworkExtensionTest extends TestCase
         $this->assertGreaterThan(0, \count($registryDefinition->getMethodCalls()));
     }
 
+    /**
+     * @group legacy
+     */
     public function testWorkflowLegacy()
     {
         $container = $this->createContainerFromFile('workflow-legacy');
 
-        $this->assertTrue($container->hasDefinition('workflow.legacy'), 'Workflow is registered as a service');
-        $this->assertSame('workflow.abstract', $container->getDefinition('workflow.legacy')->getParent());
-        $this->assertTrue($container->hasDefinition('workflow.legacy.definition'), 'Workflow definition is registered as a service');
+        $this->assertTrue($container->hasDefinition('state_machine.legacy'), 'Workflow is registered as a service');
+        $this->assertSame('state_machine.abstract', $container->getDefinition('state_machine.legacy')->getParent());
+        $this->assertTrue($container->hasDefinition('state_machine.legacy.definition'), 'Workflow definition is registered as a service');
 
-        $workflowDefinition = $container->getDefinition('workflow.legacy.definition');
+        $workflowDefinition = $container->getDefinition('state_machine.legacy.definition');
 
         $this->assertSame(['draft'], $workflowDefinition->getArgument(2));
 
@@ -310,7 +317,7 @@ abstract class FrameworkExtensionTest extends TestCase
      */
     public function testWorkflowCannotHaveBothTypeAndService()
     {
-        $this->createContainerFromFile('workflow_with_type_and_service');
+        $this->createContainerFromFile('workflow_legacy_with_type_and_service');
     }
 
     /**
@@ -334,10 +341,11 @@ abstract class FrameworkExtensionTest extends TestCase
     /**
      * @expectedException \Symfony\Component\Config\Definition\Exception\InvalidConfigurationException
      * @expectedExceptionMessage "arguments" and "service" cannot be used together.
+     * @group legacy
      */
     public function testWorkflowCannotHaveBothArgumentsAndService()
     {
-        $this->createContainerFromFile('workflow_with_arguments_and_service');
+        $this->createContainerFromFile('workflow_legacy_with_arguments_and_service');
     }
 
     public function testWorkflowMultipleTransitionsWithSameName()
@@ -410,7 +418,7 @@ abstract class FrameworkExtensionTest extends TestCase
         ], $container->getDefinition($transitions[4])->getArguments());
     }
 
-    public function testGuardExpressions()
+    public function testWorkflowGuardExpressions()
     {
         $container = $this->createContainerFromFile('workflow_with_guard_expression');
 
@@ -791,6 +799,26 @@ abstract class FrameworkExtensionTest extends TestCase
 
         $calls = $container->getDefinition('translator.default')->getMethodCalls();
         $this->assertEquals(['fr'], $calls[1][1][0]);
+
+        $nonExistingDirectories = array_filter(
+            $options['scanned_directories'],
+            function ($directory) {
+                return !file_exists($directory);
+            }
+        );
+
+        $this->assertNotEmpty($nonExistingDirectories, 'FrameworkBundle should pass non existing directories to Translator');
+
+        $resources = $container->getResources();
+        foreach ($resources as $resource) {
+            if ($resource instanceof DirectoryResource) {
+                $this->assertNotContains('translations', $resource->getResource());
+            }
+
+            if ($resource instanceof FileExistenceResource) {
+                $this->assertNotContains('translations', $resource->getResource());
+            }
+        }
     }
 
     /**

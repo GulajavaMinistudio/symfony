@@ -51,7 +51,12 @@ class AmqpSender implements SenderInterface
         }
 
         try {
-            $this->connection->publish($encodedMessage['body'], $encodedMessage['headers'] ?? [], $delay);
+            $this->connection->publish(
+                $encodedMessage['body'],
+                $encodedMessage['headers'] ?? [],
+                $delay,
+                $envelope->last(AmqpStamp::class)
+            );
         } catch (\AMQPException $e) {
             throw new TransportException($e->getMessage(), 0, $e);
         }

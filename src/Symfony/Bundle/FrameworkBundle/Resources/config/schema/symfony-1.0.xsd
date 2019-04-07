@@ -233,6 +233,7 @@
     <xsd:complexType name="property_access">
         <xsd:attribute name="magic-call" type="xsd:boolean" />
         <xsd:attribute name="throw-exception-on-invalid-index" type="xsd:boolean" />
+        <xsd:attribute name="throw-exception-on-invalid-property-path" type="xsd:boolean" />
     </xsd:complexType>
 
     <xsd:complexType name="serializer">
@@ -278,7 +279,7 @@
 
     <xsd:complexType name="workflow">
         <xsd:sequence>
-            <xsd:element name="initial-place" type="xsd:string" minOccurs="0" maxOccurs="unbounded" />
+            <xsd:element name="initial-marking" type="xsd:string" minOccurs="0" maxOccurs="unbounded" />
             <xsd:element name="marking-store" type="marking_store" minOccurs="0" maxOccurs="1" />
             <xsd:element name="support" type="xsd:string" minOccurs="0" maxOccurs="unbounded" />
             <xsd:element name="place" type="place" minOccurs="0" maxOccurs="unbounded" />
@@ -288,6 +289,7 @@
         <xsd:attribute name="name" type="xsd:string" />
         <xsd:attribute name="type" type="workflow_type" />
         <xsd:attribute name="initial-place" type="xsd:string" />
+        <xsd:attribute name="initial-marking" type="xsd:string" />
         <xsd:attribute name="support-strategy" type="xsd:string" />
         <xsd:attribute name="enabled" type="xsd:boolean" />
     </xsd:complexType>
@@ -303,12 +305,14 @@
         </xsd:sequence>
         <xsd:attribute name="type" type="marking_store_type" />
         <xsd:attribute name="service" type="xsd:string" />
+        <xsd:attribute name="property" type="xsd:string" />
     </xsd:complexType>
 
     <xsd:simpleType name="marking_store_type">
         <xsd:restriction base="xsd:string">
             <xsd:enumeration value="multiple_state" />
             <xsd:enumeration value="single_state" />
+            <xsd:enumeration value="method" />
         </xsd:restriction>
     </xsd:simpleType>
 

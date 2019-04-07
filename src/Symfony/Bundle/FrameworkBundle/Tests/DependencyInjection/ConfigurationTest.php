@@ -234,6 +234,7 @@ class ConfigurationTest extends TestCase
                     'paths' => [],
                 ],
                 'auto_mapping' => [],
+                'disable_not_compromised_password' => false,
             ],
             'annotations' => [
                 'cache' => 'php_array',
@@ -249,6 +250,7 @@ class ConfigurationTest extends TestCase
             'property_access' => [
                 'magic_call' => false,
                 'throw_exception_on_invalid_index' => false,
+                'throw_exception_on_invalid_property_path' => true,
             ],
             'property_info' => [
                 'enabled' => !class_exists(FullStack::class),
