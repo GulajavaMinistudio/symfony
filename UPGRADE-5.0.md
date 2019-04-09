@@ -25,6 +25,7 @@ Config
  * The `Processor` class has been made final
  * Removed `FileLoaderLoadException`, use `LoaderLoadException` instead.
  * Using environment variables with `cannotBeEmpty()` if the value is validated with `validate()` will throw an exception.
+ * Removed the `root()` method in `TreeBuilder`, pass the root node information to the constructor instead
 
 Console
 -------
@@ -326,8 +327,7 @@ Security
    }
    ```
 
- * Using `Argon2iPasswordEncoder` while only the `argon2id` algorithm is supported
-   now throws a `\LogicException`, use `Argon2idPasswordEncoder` instead
+ * The `Argon2iPasswordEncoder` class has been removed, use `SodiumPasswordEncoder` instead.
 
 SecurityBundle
 --------------
@@ -348,8 +348,7 @@ SecurityBundle
    changed to underscores.
    Before: `my-cookie` deleted the `my_cookie` cookie (with an underscore).
    After: `my-cookie` deletes the `my-cookie` cookie (with a dash).
- * Configuring encoders using `argon2i` as algorithm while only `argon2id` is supported
-   now throws a `\LogicException`, use `argon2id` instead
+ * Configuring encoders using `argon2i` as algorithm is not supported anymore, use `sodium` instead.
 
 Serializer
 ----------
