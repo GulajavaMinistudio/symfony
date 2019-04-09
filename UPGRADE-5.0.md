@@ -60,6 +60,9 @@ DoctrineBridge
 
  * Deprecated injecting `ClassMetadataFactory` in `DoctrineExtractor`, an instance of `EntityManagerInterface` should be
    injected instead
+ * Passing an `IdReader` to the `DoctrineChoiceLoader` when the query cannot be optimized with single id field will throw an exception, pass `null` instead
+ * Not passing an `IdReader` to the `DoctrineChoiceLoader` when the query can be optimized with single id field will throw an exception
+
 
 DomCrawler
 ----------
@@ -293,7 +296,7 @@ Security
  * The `Firewall::handleRequest()` method has been removed, use `Firewall::callListeners()` instead.
  * `\Serializable` interface has been removed from `AbstractToken` and `AuthenticationException`,
    thus `serialize()` and `unserialize()` aren't available.
-   Use `getState()` and `setState()` instead.
+   Use `__serialize()` and `__unserialize()` instead.
 
    Before:
    ```php
@@ -311,17 +314,20 @@ Security
 
    After:
    ```php
-   protected function getState(): array
+   public function __serialize(): array
    {
-       return [$this->myLocalVar, parent::getState()];
+       return [$this->myLocalVar, parent::__serialize()];
    }
 
-   protected function setState(array $data)
+   public function __unserialize(array $data): void
    {
        [$this->myLocalVar, $parentData] = $data;
-       parent::setState($parentData);
+       parent::__unserialize($parentData);
    }
    ```
+
+ * Using `Argon2iPasswordEncoder` while only the `argon2id` algorithm is supported
+   now throws a `\LogicException`, use `Argon2idPasswordEncoder` instead
 
 SecurityBundle
 --------------
@@ -342,6 +348,8 @@ SecurityBundle
    changed to underscores.
    Before: `my-cookie` deleted the `my_cookie` cookie (with an underscore).
    After: `my-cookie` deletes the `my-cookie` cookie (with a dash).
+ * Configuring encoders using `argon2i` as algorithm while only `argon2id` is supported
+   now throws a `\LogicException`, use `argon2id` instead
 
 Serializer
 ----------
@@ -364,6 +372,13 @@ TwigBundle
  * The default value (`false`) of the `twig.strict_variables` configuration option has been changed to `%kernel.debug%`.
  * The `transchoice` tag and filter have been removed, use the `trans` ones instead with a `%count%` parameter.
  * Removed support for legacy templates directories `src/Resources/views/` and `src/Resources/<BundleName>/views/`, use `templates/` and `templates/bundles/<BundleName>/` instead.
+ 
+TwigBridge
+----------
+
+ * removed the `$requestStack` and `$requestContext` arguments of the 
+   `HttpFoundationExtension`, pass a `Symfony\Component\HttpFoundation\UrlHelper`
+   instance as the only argument instead
 
 Validator
 --------

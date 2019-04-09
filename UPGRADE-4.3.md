@@ -38,6 +38,12 @@ DependencyInjection
           env(NAME): '1.5'
    ```
 
+Doctrine Bridge
+---------------
+
+ * Passing an `IdReader` to the `DoctrineChoiceLoader` when the query cannot be optimized with single id field has been deprecated, pass `null` instead
+ * Not passing an `IdReader` to the `DoctrineChoiceLoader` when the query can be optimized with single id field has been deprecated
+
 EventDispatcher
 ---------------
 
@@ -115,7 +121,7 @@ Security
  * The `Firewall::handleRequest()` method is deprecated, use `Firewall::callListeners()` instead.
  * The `AbstractToken::serialize()`, `AbstractToken::unserialize()`,
    `AuthenticationException::serialize()` and `AuthenticationException::unserialize()`
-   methods are now final, use `getState()` and `setState()` instead.
+   methods are now final, use `__serialize()` and `__unserialize()` instead.
 
    Before:
    ```php
@@ -133,22 +139,38 @@ Security
 
    After:
    ```php
-   protected function getState(): array
+   public function __serialize(): array
    {
-       return [$this->myLocalVar, parent::getState()];
+       return [$this->myLocalVar, parent::__serialize()];
    }
 
-   protected function setState(array $data)
+   public function __unserialize(array $data): void
    {
        [$this->myLocalVar, $parentData] = $data;
-       parent::setState($parentData);
+       parent::__unserialize($parentData);
    }
    ```
+
+ * Using `Argon2iPasswordEncoder` while only the `argon2id` algorithm is supported
+   is deprecated, use `Argon2idPasswordEncoder` instead
+
+SecurityBundle
+--------------
+
+ * Configuring encoders using `argon2i` as algorithm while only `argon2id` is
+   supported is deprecated, use `argon2id` instead
+
+TwigBridge
+----------
+
+ * deprecated the `$requestStack` and `$requestContext` arguments of the 
+   `HttpFoundationExtension`, pass a `Symfony\Component\HttpFoundation\UrlHelper`
+   instance as the only argument instead
 
 Workflow
 --------
 
- * `initial_place` is deprecated in favour of `initial_places`.
+ * `initial_place` is deprecated in favour of `initial_marking`.
 
    Before:
    ```yaml
@@ -163,11 +185,8 @@ Workflow
    framework:
       workflows:
           article:
-              initial_places: [draft]
+              initial_marking: [draft]
    ```
-
-Workflow
---------
 
  * `MarkingStoreInterface::setMarking()` will have a third argument in Symfony 5.0.
 

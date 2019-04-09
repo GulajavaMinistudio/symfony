@@ -63,12 +63,14 @@ class DefaultChoiceListFactory implements ChoiceListFactoryInterface
             $index = 0;
         }
 
-        // If $groupBy is a callable, choices are added to the group with the
-        // name returned by the callable. If the callable returns null, the
-        // choice is not added to any group
+        // If $groupBy is a callable returning a string
+        // choices are added to the group with the name returned by the callable.
+        // If $groupBy is a callable returning an array
+        // choices are added to the groups with names returned by the callable
+        // If the callable returns null, the choice is not added to any group
         if (\is_callable($groupBy)) {
             foreach ($choices as $value => $choice) {
-                self::addChoiceViewGroupedBy(
+                self::addChoiceViewsGroupedByCallable(
                     $groupBy,
                     $choice,
                     (string) $value,
@@ -81,9 +83,23 @@ class DefaultChoiceListFactory implements ChoiceListFactoryInterface
                     $otherViews
                 );
             }
+
+            // Remove empty group views that may have been created by
+            // addChoiceViewsGroupedByCallable()
+            foreach ($preferredViews as $key => $view) {
+                if ($view instanceof ChoiceGroupView && 0 === \count($view->choices)) {
+                    unset($preferredViews[$key]);
+                }
+            }
+
+            foreach ($otherViews as $key => $view) {
+                if ($view instanceof ChoiceGroupView && 0 === \count($view->choices)) {
+                    unset($otherViews[$key]);
+                }
+            }
         } else {
             // Otherwise use the original structure of the choices
-            self::addChoiceViewsGroupedBy(
+            self::addChoiceViewsFromStructuredValues(
                 $list->getStructuredValues(),
                 $label,
                 $choices,
@@ -94,20 +110,6 @@ class DefaultChoiceListFactory implements ChoiceListFactoryInterface
                 $preferredViews,
                 $otherViews
             );
-        }
-
-        // Remove any empty group view that may have been created by
-        // addChoiceViewGroupedBy()
-        foreach ($preferredViews as $key => $view) {
-            if ($view instanceof ChoiceGroupView && 0 === \count($view->choices)) {
-                unset($preferredViews[$key]);
-            }
-        }
-
-        foreach ($otherViews as $key => $view) {
-            if ($view instanceof ChoiceGroupView && 0 === \count($view->choices)) {
-                unset($otherViews[$key]);
-            }
         }
 
         return new ChoiceListView($otherViews, $preferredViews);
@@ -148,9 +150,9 @@ class DefaultChoiceListFactory implements ChoiceListFactoryInterface
         }
     }
 
-    private static function addChoiceViewsGroupedBy($groupBy, $label, $choices, $keys, &$index, $attr, $isPreferred, &$preferredViews, &$otherViews)
+    private static function addChoiceViewsFromStructuredValues($values, $label, $choices, $keys, &$index, $attr, $isPreferred, &$preferredViews, &$otherViews)
     {
-        foreach ($groupBy as $key => $value) {
+        foreach ($values as $key => $value) {
             if (null === $value) {
                 continue;
             }
@@ -160,7 +162,7 @@ class DefaultChoiceListFactory implements ChoiceListFactoryInterface
                 $preferredViewsForGroup = [];
                 $otherViewsForGroup = [];
 
-                self::addChoiceViewsGroupedBy(
+                self::addChoiceViewsFromStructuredValues(
                     $value,
                     $label,
                     $choices,
@@ -198,11 +200,11 @@ class DefaultChoiceListFactory implements ChoiceListFactoryInterface
         }
     }
 
-    private static function addChoiceViewGroupedBy($groupBy, $choice, $value, $label, $keys, &$index, $attr, $isPreferred, &$preferredViews, &$otherViews)
+    private static function addChoiceViewsGroupedByCallable($groupBy, $choice, $value, $label, $keys, &$index, $attr, $isPreferred, &$preferredViews, &$otherViews)
     {
-        $groupLabel = $groupBy($choice, $keys[$value], $value);
+        $groupLabels = $groupBy($choice, $keys[$value], $value);
 
-        if (null === $groupLabel) {
+        if (null === $groupLabels) {
             // If the callable returns null, don't group the choice
             self::addChoiceView(
                 $choice,
@@ -219,25 +221,27 @@ class DefaultChoiceListFactory implements ChoiceListFactoryInterface
             return;
         }
 
-        $groupLabel = (string) $groupLabel;
+        $groupLabels = \is_array($groupLabels) ? \array_map('strval', $groupLabels) : [(string) $groupLabels];
 
-        // Initialize the group views if necessary. Unnecessarily built group
-        // views will be cleaned up at the end of createView()
-        if (!isset($preferredViews[$groupLabel])) {
-            $preferredViews[$groupLabel] = new ChoiceGroupView($groupLabel);
-            $otherViews[$groupLabel] = new ChoiceGroupView($groupLabel);
+        foreach ($groupLabels as $groupLabel) {
+            // Initialize the group views if necessary. Unnecessarily built group
+            // views will be cleaned up at the end of createView()
+            if (!isset($preferredViews[$groupLabel])) {
+                $preferredViews[$groupLabel] = new ChoiceGroupView($groupLabel);
+                $otherViews[$groupLabel] = new ChoiceGroupView($groupLabel);
+            }
+
+            self::addChoiceView(
+                $choice,
+                $value,
+                $label,
+                $keys,
+                $index,
+                $attr,
+                $isPreferred,
+                $preferredViews[$groupLabel]->choices,
+                $otherViews[$groupLabel]->choices
+            );
         }
-
-        self::addChoiceView(
-            $choice,
-            $value,
-            $label,
-            $keys,
-            $index,
-            $attr,
-            $isPreferred,
-            $preferredViews[$groupLabel]->choices,
-            $otherViews[$groupLabel]->choices
-        );
     }
 }
