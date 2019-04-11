@@ -45,6 +45,12 @@ Doctrine Bridge
  * Passing an `IdReader` to the `DoctrineChoiceLoader` when the query cannot be optimized with single id field has been deprecated, pass `null` instead
  * Not passing an `IdReader` to the `DoctrineChoiceLoader` when the query can be optimized with single id field has been deprecated
 
+Dotenv
+------
+
+ * First parameter of `Dotenv::__construct()` will change from `true` to `false` in Symfony 5.0. A deprecation warning
+   is triggered if no parameter is used. Use `$usePutenv = true` to upgrade without breaking changes.  
+
 EventDispatcher
 ---------------
 
@@ -153,6 +159,8 @@ Security
    ```
 
  * The `Argon2iPasswordEncoder` class has been deprecated, use `SodiumPasswordEncoder` instead.
+ * Not implementing the methods `__serialize` and `__unserialize` in classes implementing
+   the `TokenInterface` is deprecated
 
 SecurityBundle
 --------------

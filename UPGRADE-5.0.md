@@ -70,6 +70,11 @@ DomCrawler
 
  * The `Crawler::children()` method has a new `$selector` argument.
 
+Dotenv
+------
+
+ * First parameter `$usePutenv` of `Dotenv::__construct()` now default to `false`.
+
 EventDispatcher
 ---------------
 
@@ -328,6 +333,8 @@ Security
    ```
 
  * The `Argon2iPasswordEncoder` class has been removed, use `SodiumPasswordEncoder` instead.
+ * Classes implementing the `TokenInterface` must implement the two new methods
+   `__serialize` and `__unserialize`
 
 SecurityBundle
 --------------
