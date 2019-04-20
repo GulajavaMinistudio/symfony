@@ -12,24 +12,19 @@
 namespace Symfony\Component\Security\Core\Tests\Encoder;
 
 use PHPUnit\Framework\TestCase;
-use Symfony\Component\Security\Core\Encoder\BCryptPasswordEncoder;
+use Symfony\Component\Security\Core\Encoder\NativePasswordEncoder;
 
 /**
  * @author Elnur Abdurrakhimov <elnur@elnur.pro>
- *
- * @group legacy
  */
-class BCryptPasswordEncoderTest extends TestCase
+class NativePasswordEncoderTest extends TestCase
 {
-    const PASSWORD = 'password';
-    const VALID_COST = '04';
-
     /**
      * @expectedException \InvalidArgumentException
      */
     public function testCostBelowRange()
     {
-        new BCryptPasswordEncoder(3);
+        new NativePasswordEncoder(null, null, 3);
     }
 
     /**
@@ -37,7 +32,7 @@ class BCryptPasswordEncoderTest extends TestCase
      */
     public function testCostAboveRange()
     {
-        new BCryptPasswordEncoder(32);
+        new NativePasswordEncoder(null, null, 32);
     }
 
     /**
@@ -45,7 +40,7 @@ class BCryptPasswordEncoderTest extends TestCase
      */
     public function testCostInRange($cost)
     {
-        $this->assertInstanceOf('Symfony\Component\Security\Core\Encoder\BCryptPasswordEncoder', new BCryptPasswordEncoder($cost));
+        $this->assertInstanceOf(NativePasswordEncoder::class, new NativePasswordEncoder(null, null, $cost));
     }
 
     public function validRangeData()
@@ -56,35 +51,18 @@ class BCryptPasswordEncoderTest extends TestCase
         return $costs;
     }
 
-    public function testResultLength()
-    {
-        $encoder = new BCryptPasswordEncoder(self::VALID_COST);
-        $result = $encoder->encodePassword(self::PASSWORD, null);
-        $this->assertEquals(60, \strlen($result));
-    }
-
     public function testValidation()
     {
-        $encoder = new BCryptPasswordEncoder(self::VALID_COST);
-        $result = $encoder->encodePassword(self::PASSWORD, null);
-        $this->assertTrue($encoder->isPasswordValid($result, self::PASSWORD, null));
+        $encoder = new NativePasswordEncoder();
+        $result = $encoder->encodePassword('password', null);
+        $this->assertTrue($encoder->isPasswordValid($result, 'password', null));
         $this->assertFalse($encoder->isPasswordValid($result, 'anotherPassword', null));
-    }
-
-    /**
-     * @expectedException \Symfony\Component\Security\Core\Exception\BadCredentialsException
-     */
-    public function testEncodePasswordLength()
-    {
-        $encoder = new BCryptPasswordEncoder(self::VALID_COST);
-
-        $encoder->encodePassword(str_repeat('a', 73), 'salt');
     }
 
     public function testCheckPasswordLength()
     {
-        $encoder = new BCryptPasswordEncoder(self::VALID_COST);
-        $result = $encoder->encodePassword(str_repeat('a', 72), null);
+        $encoder = new NativePasswordEncoder(null, null, 4);
+        $result = password_hash(str_repeat('a', 72), PASSWORD_BCRYPT, ['cost' => 4]);
 
         $this->assertFalse($encoder->isPasswordValid($result, str_repeat('a', 73), 'salt'));
         $this->assertTrue($encoder->isPasswordValid($result, str_repeat('a', 72), 'salt'));

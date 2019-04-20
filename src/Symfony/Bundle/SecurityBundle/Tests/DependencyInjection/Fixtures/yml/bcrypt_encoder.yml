@@ -4,6 +4,5 @@ imports:
 security:
     encoders:
         JMS\FooBundle\Entity\User7:
-            algorithm: sodium
-            time_cost: 8
-            memory_cost: 131072
+            algorithm: bcrypt
+            cost: 15
