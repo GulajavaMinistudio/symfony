@@ -4,6 +4,7 @@ CHANGELOG
 4.3.0
 -----
 
+ * Added `WorkerStoppedEvent` dispatched when a worker is stopped.
  * Added optional `MessageCountAwareInterface` that receivers can implement
    to give information about how many messages are waiting to be processed.
  * [BC BREAK] The `Envelope::__construct()` signature changed:
@@ -80,6 +81,12 @@ CHANGELOG
  * Added a Doctrine transport. For example, use the `doctrine://default` DSN (this uses the `default` Doctrine entity manager)
  * [BC BREAK] The `getConnectionConfiguration` method on Amqp's `Connection` has been removed. 
  * [BC BREAK] A `HandlerFailedException` exception will be thrown if one or more handler fails.
+ * [BC BREAK] The `HandlersLocationInterface::getHandlers` method needs to return `HandlerDescriptor`
+   instances instead of callables.
+ * [BC BREAK] The `HandledStamp` stamp has changed: `handlerAlias` has been renamed to `handlerName`,
+   `getCallableName` has been removed and its constructor only has 2 arguments now.
+ * [BC BREAK] The `ReceivedStamp` needs to exposes the name of the transport from which the message
+   has been received.
 
 4.2.0
 -----
