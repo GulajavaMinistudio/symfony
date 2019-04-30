@@ -12,6 +12,7 @@
 namespace Symfony\Component\Intl;
 
 use Symfony\Component\Intl\Exception\MissingResourceException;
+use Symfony\Component\Intl\Exception\RuntimeException;
 
 /**
  * Gives access to timezone-related ICU data.
@@ -50,6 +51,39 @@ final class Timezones extends ResourceBundle
     public static function getNames(string $displayLocale = null): array
     {
         return self::asort(self::readEntry(['Names'], $displayLocale), $displayLocale);
+    }
+
+    public static function getRawOffset(string $timezone, int $timestamp = null): int
+    {
+        if (null === $timestamp) {
+            $timestamp = time();
+        }
+
+        $transitions = (new \DateTimeZone($timezone))->getTransitions($timestamp, $timestamp);
+
+        if (!isset($transitions[0]['offset'])) {
+            throw new RuntimeException('No timezone transitions available.');
+        }
+
+        return $transitions[0]['offset'];
+    }
+
+    public static function getGmtOffset(string $timezone, int $timestamp = null, string $displayLocale = null): string
+    {
+        $offset = self::getRawOffset($timezone, $timestamp);
+        $abs = abs($offset);
+
+        return sprintf(self::readEntry(['Meta', 'GmtFormat'], $displayLocale), sprintf(self::readEntry(['Meta', 'HourFormat', 0 <= $offset ? 0 : 1], $displayLocale), $abs / 3600, $abs / 60 % 60));
+    }
+
+    public static function getCountryCode(string $timezone): string
+    {
+        return self::readEntry(['ZoneToCountry', $timezone], 'meta');
+    }
+
+    public static function forCountryCode(string $country): array
+    {
+        return self::readEntry(['CountryToZone', $country], 'meta');
     }
 
     protected static function getPath(): string

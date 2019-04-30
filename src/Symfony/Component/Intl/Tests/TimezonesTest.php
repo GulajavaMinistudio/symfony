@@ -529,4 +529,37 @@ class TimezonesTest extends ResourceBundleTestCase
         $this->assertTrue(Timezones::exists('Europe/Amsterdam'));
         $this->assertFalse(Timezones::exists('Etc/Unknown'));
     }
+
+    public function testGetRawOffset()
+    {
+        // timezones free from DST changes to avoid time-based variance
+        $this->assertSame(0, Timezones::getRawOffset('Etc/UTC'));
+        $this->assertSame(-10800, Timezones::getRawOffset('America/Buenos_Aires'));
+        $this->assertSame(20700, Timezones::getRawOffset('Asia/Katmandu'));
+    }
+
+    public function testGetGmtOffset()
+    {
+        // timezones free from DST changes to avoid time-based variance
+        $this->assertSame('GMT+00:00', Timezones::getGmtOffset('Etc/UTC'));
+        $this->assertSame('UTC+00:00', Timezones::getGmtOffset('Etc/UTC', null, 'fr'));
+        $this->assertSame('GMT +00:00', Timezones::getGmtOffset('Etc/GMT', null, 'ur'));
+        $this->assertSame('GMT+00:00', Timezones::getGmtOffset('Etc/GMT', null, 'ur_IN'));
+        $this->assertSame('GMT-03:00', Timezones::getGmtOffset('America/Buenos_Aires'));
+        $this->assertSame('ཇི་ཨེམ་ཏི་-03:00', Timezones::getGmtOffset('America/Buenos_Aires', null, 'dz'));
+        $this->assertSame('GMT+05:45', Timezones::getGmtOffset('Asia/Katmandu'));
+        $this->assertSame('GMT+5:45', Timezones::getGmtOffset('Asia/Katmandu', null, 'cs'));
+    }
+
+    public function testGetCountryCode()
+    {
+        $this->assertSame('NL', Timezones::getCountryCode('Europe/Amsterdam'));
+        $this->assertSame('US', Timezones::getCountryCode('America/New_York'));
+    }
+
+    public function testForCountryCode()
+    {
+        $this->assertSame(['Europe/Amsterdam'], Timezones::forCountryCode('NL'));
+        $this->assertSame(['Europe/Berlin', 'Europe/Busingen'], Timezones::forCountryCode('DE'));
+    }
 }
