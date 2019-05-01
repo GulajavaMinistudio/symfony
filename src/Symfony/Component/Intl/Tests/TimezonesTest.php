@@ -11,6 +11,8 @@
 
 namespace Symfony\Component\Intl\Tests;
 
+use Symfony\Component\Intl\Exception\MissingResourceException;
+use Symfony\Component\Intl\Regions;
 use Symfony\Component\Intl\Timezones;
 
 /**
@@ -456,6 +458,15 @@ class TimezonesTest extends ResourceBundleTestCase
         'Pacific/Wake',
         'Pacific/Wallis',
     ];
+    private static $zonesNoCountry = [
+        'Antarctica/Troll',
+        'CST6CDT',
+        'EST5EDT',
+        'MST7MDT',
+        'PST8PDT',
+        'Etc/GMT',
+        'Etc/UTC',
+    ];
 
     public function testGetTimezones()
     {
@@ -538,6 +549,15 @@ class TimezonesTest extends ResourceBundleTestCase
         $this->assertSame(20700, Timezones::getRawOffset('Asia/Katmandu'));
     }
 
+    /**
+     * @expectedException \Exception
+     * @expectedExceptionMessage Unknown or bad timezone (foobar)
+     */
+    public function testGetRawOffsetWithUnknownTimezone()
+    {
+        Timezones::getRawOffset('foobar');
+    }
+
     public function testGetGmtOffset()
     {
         // timezones free from DST changes to avoid time-based variance
@@ -561,5 +581,77 @@ class TimezonesTest extends ResourceBundleTestCase
     {
         $this->assertSame(['Europe/Amsterdam'], Timezones::forCountryCode('NL'));
         $this->assertSame(['Europe/Berlin', 'Europe/Busingen'], Timezones::forCountryCode('DE'));
+    }
+
+    /**
+     * @expectedException \Symfony\Component\Intl\Exception\MissingResourceException
+     */
+    public function testForCountryCodeWithUnknownCountry()
+    {
+        Timezones::forCountryCode('foobar');
+    }
+
+    /**
+     * @expectedException \Symfony\Component\Intl\Exception\MissingResourceException
+     */
+    public function testGetCountryCodeWithUnknownTimezone()
+    {
+        Timezones::getCountryCode('foobar');
+    }
+
+    /**
+     * @dataProvider provideTimezones
+     */
+    public function testGetGmtOffsetAvailability(string $timezone)
+    {
+        // ensure each timezone identifier has a corresponding GMT offset
+        Timezones::getRawOffset($timezone);
+        Timezones::getGmtOffset($timezone);
+
+        $this->addToAssertionCount(1);
+    }
+
+    /**
+     * @dataProvider provideTimezones
+     */
+    public function testGetCountryCodeAvailability(string $timezone)
+    {
+        try {
+            // ensure each timezone identifier has a corresponding country code
+            Timezones::getCountryCode($timezone);
+
+            $this->addToAssertionCount(1);
+        } catch (MissingResourceException $e) {
+            if (\in_array($timezone, self::$zonesNoCountry, true)) {
+                $this->markTestSkipped();
+            } else {
+                $this->fail();
+            }
+        }
+    }
+
+    public function provideTimezones(): iterable
+    {
+        return array_map(function ($timezone) {
+            return [$timezone];
+        }, self::$zones);
+    }
+
+    /**
+     * @dataProvider provideCountries
+     */
+    public function testForCountryCodeAvailability(string $country)
+    {
+        // ensure each country code has a list of timezone identifiers (possibly empty)
+        Timezones::forCountryCode($country);
+
+        $this->addToAssertionCount(1);
+    }
+
+    public function provideCountries(): iterable
+    {
+        return array_map(function ($country) {
+            return [$country];
+        }, Regions::getRegionCodes());
     }
 }
