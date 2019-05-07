@@ -89,7 +89,7 @@ class Connection
         } catch (\RedisException $e) {
         }
 
-        if (false === $messages || $e) {
+        if ($e || false === $messages) {
             throw new TransportException(
                 ($e ? $e->getMessage() : $this->connection->getLastError()) ?? 'Could not read messages from the redis stream.'
             );
@@ -123,7 +123,7 @@ class Connection
         } catch (\RedisException $e) {
         }
 
-        if (!$acknowledged || $e) {
+        if ($e || !$acknowledged) {
             throw new TransportException(($e ? $e->getMessage() : $this->connection->getLastError()) ?? sprintf('Could not acknowledge redis message "%s".', $id), 0, $e);
         }
     }
@@ -132,11 +132,12 @@ class Connection
     {
         $e = null;
         try {
-            $deleted = $this->connection->xdel($this->stream, [$id]);
+            $deleted = $this->connection->xack($this->stream, $this->group, [$id]);
+            $deleted = $this->connection->xdel($this->stream, [$id]) && $deleted;
         } catch (\RedisException $e) {
         }
 
-        if (!$deleted || $e) {
+        if ($e || !$deleted) {
             throw new TransportException(($e ? $e->getMessage() : $this->connection->getLastError()) ?? sprintf('Could not delete message "%s" from the redis stream.', $id), 0, $e);
         }
     }
@@ -151,7 +152,7 @@ class Connection
         } catch (\RedisException $e) {
         }
 
-        if (!$added || $e) {
+        if ($e || !$added) {
             throw new TransportException(($e ? $e->getMessage() : $this->connection->getLastError()) ?? 'Could not add a message to the redis stream.', 0, $e);
         }
     }

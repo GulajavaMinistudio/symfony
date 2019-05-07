@@ -11,7 +11,6 @@
 
 namespace Symfony\Component\Intl\Tests;
 
-use Symfony\Component\Intl\Locale;
 use Symfony\Component\Intl\Locales;
 
 /**
@@ -24,7 +23,7 @@ class LocalesTest extends ResourceBundleTestCase
         $this->assertSame($this->getLocales(), Locales::getLocales());
     }
 
-    public function testGetLocaleAliases()
+    public function testGetAliases()
     {
         $this->assertSame($this->getLocaleAliases(), Locales::getAliases());
     }
@@ -46,7 +45,7 @@ class LocalesTest extends ResourceBundleTestCase
 
     public function testGetNamesDefaultLocale()
     {
-        Locale::setDefault('de_AT');
+        \Locale::setDefault('de_AT');
 
         $this->assertSame(Locales::getNames('de_AT'), Locales::getNames());
     }
@@ -76,7 +75,7 @@ class LocalesTest extends ResourceBundleTestCase
 
     public function testGetNameDefaultLocale()
     {
-        Locale::setDefault('de_AT');
+        \Locale::setDefault('de_AT');
 
         $names = Locales::getNames('de_AT');
 
@@ -93,9 +92,16 @@ class LocalesTest extends ResourceBundleTestCase
         Locales::getName('foo');
     }
 
+    public function testGetNameWithAliasLocale()
+    {
+        $this->assertSame(Locales::getName('tl_PH'), Locales::getName('fil_PH'));
+    }
+
     public function testExists()
     {
         $this->assertTrue(Locales::exists('nl_NL'));
+        $this->assertTrue(Locales::exists('tl_PH'));
+        $this->assertTrue(Locales::exists('fil_PH')); // alias for "tl_PH"
         $this->assertFalse(Locales::exists('zxx_ZZ'));
     }
 }

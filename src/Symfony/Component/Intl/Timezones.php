@@ -36,12 +36,18 @@ final class Timezones extends ResourceBundle
 
             return true;
         } catch (MissingResourceException $e) {
-            return false;
+            try {
+                new \DateTimeZone($timezone);
+
+                return true;
+            } catch (\Exception $e) {
+                return false;
+            }
         }
     }
 
     /**
-     * @throws MissingResourceException if the timezone identifier does not exists
+     * @throws MissingResourceException if the timezone identifier does not exist or is an alias
      */
     public static function getName(string $timezone, string $displayLocale = null): string
     {
@@ -57,7 +63,7 @@ final class Timezones extends ResourceBundle
     }
 
     /**
-     * @throws \Exception       if the timezone identifier does not exists
+     * @throws \Exception       if the timezone identifier does not exist
      * @throws RuntimeException if there's no timezone DST transition information available
      */
     public static function getRawOffset(string $timezone, int $timestamp = null): int
@@ -92,14 +98,14 @@ final class Timezones extends ResourceBundle
     }
 
     /**
-     * @throws MissingResourceException if the country code does not exists
+     * @throws MissingResourceException if the country code does not exist
      */
     public static function forCountryCode(string $country): array
     {
         try {
             return self::readEntry(['CountryToZone', $country], 'meta');
         } catch (MissingResourceException $e) {
-            if (Regions::exists($country)) {
+            if (Countries::exists($country)) {
                 return [];
             }
 

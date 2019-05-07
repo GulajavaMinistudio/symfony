@@ -11,8 +11,8 @@
 
 namespace Symfony\Component\Intl\Tests;
 
+use Symfony\Component\Intl\Countries;
 use Symfony\Component\Intl\Exception\MissingResourceException;
-use Symfony\Component\Intl\Regions;
 use Symfony\Component\Intl\Timezones;
 
 /**
@@ -468,7 +468,7 @@ class TimezonesTest extends ResourceBundleTestCase
         'Etc/UTC',
     ];
 
-    public function testGetTimezones()
+    public function testGetIds()
     {
         $this->assertEquals(self::$zones, Timezones::getIds());
     }
@@ -530,14 +530,23 @@ class TimezonesTest extends ResourceBundleTestCase
     /**
      * @expectedException \Symfony\Component\Intl\Exception\MissingResourceException
      */
-    public function testGetNameWithInvalidTimezoneId()
+    public function testGetNameWithInvalidTimezone()
     {
         Timezones::getName('foo');
+    }
+
+    /**
+     * @expectedException \Symfony\Component\Intl\Exception\MissingResourceException
+     */
+    public function testGetNameWithAliasTimezone()
+    {
+        Timezones::getName('US/Pacific'); // alias in icu (not compiled), name unavailable in php
     }
 
     public function testExists()
     {
         $this->assertTrue(Timezones::exists('Europe/Amsterdam'));
+        $this->assertTrue(Timezones::exists('US/Pacific')); // alias in icu (not compiled), identifier available in php
         $this->assertFalse(Timezones::exists('Etc/Unknown'));
     }
 
@@ -547,6 +556,9 @@ class TimezonesTest extends ResourceBundleTestCase
         $this->assertSame(0, Timezones::getRawOffset('Etc/UTC'));
         $this->assertSame(-10800, Timezones::getRawOffset('America/Buenos_Aires'));
         $this->assertSame(20700, Timezones::getRawOffset('Asia/Katmandu'));
+
+        // ensure we support identifiers available in php (not compiled from icu)
+        Timezones::getRawOffset('US/Pacific');
     }
 
     /**
@@ -652,6 +664,6 @@ class TimezonesTest extends ResourceBundleTestCase
     {
         return array_map(function ($country) {
             return [$country];
-        }, Regions::getRegionCodes());
+        }, Countries::getCountryCodes());
     }
 }
