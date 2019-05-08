@@ -13,7 +13,6 @@ namespace Symfony\Component\Intl\Tests\Data\Provider;
 
 use Symfony\Component\Intl\Data\Provider\RegionDataProvider;
 use Symfony\Component\Intl\Intl;
-use Symfony\Component\Intl\Locale;
 
 /**
  * @author Bernhard Schussek <bschussek@gmail.com>
@@ -25,7 +24,6 @@ abstract class AbstractRegionDataProviderTest extends AbstractDataProviderTest
     // The below arrays document the state of the ICU data bundled with this package.
 
     protected static $territories = [
-        'AC',
         'AD',
         'AE',
         'AF',
@@ -59,6 +57,7 @@ abstract class AbstractRegionDataProviderTest extends AbstractDataProviderTest
         'BR',
         'BS',
         'BT',
+        'BV',
         'BW',
         'BY',
         'BZ',
@@ -82,13 +81,11 @@ abstract class AbstractRegionDataProviderTest extends AbstractDataProviderTest
         'CY',
         'CZ',
         'DE',
-        'DG',
         'DJ',
         'DK',
         'DM',
         'DO',
         'DZ',
-        'EA',
         'EC',
         'EE',
         'EG',
@@ -122,11 +119,11 @@ abstract class AbstractRegionDataProviderTest extends AbstractDataProviderTest
         'GW',
         'GY',
         'HK',
+        'HM',
         'HN',
         'HR',
         'HT',
         'HU',
-        'IC',
         'ID',
         'IE',
         'IL',
@@ -240,7 +237,6 @@ abstract class AbstractRegionDataProviderTest extends AbstractDataProviderTest
         'SX',
         'SY',
         'SZ',
-        'TA',
         'TC',
         'TD',
         'TF',
@@ -272,9 +268,6 @@ abstract class AbstractRegionDataProviderTest extends AbstractDataProviderTest
         'VU',
         'WF',
         'WS',
-        'XA',
-        'XB',
-        'XK',
         'YE',
         'YT',
         'ZA',
@@ -318,7 +311,7 @@ abstract class AbstractRegionDataProviderTest extends AbstractDataProviderTest
 
     public function testGetNamesDefaultLocale()
     {
-        Locale::setDefault('de_AT');
+        \Locale::setDefault('de_AT');
 
         $this->assertSame(
             $this->dataProvider->getNames('de_AT'),
