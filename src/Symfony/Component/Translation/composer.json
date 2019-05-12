@@ -37,7 +37,7 @@
         "symfony/yaml": "<3.4"
     },
     "provide": {
-        "symfony/translation-contracts-implementation": "1.0"
+        "symfony/translation-implementation": "1.0"
     },
     "suggest": {
         "symfony/config": "",
@@ -53,7 +53,7 @@
     "minimum-stability": "dev",
     "extra": {
         "branch-alias": {
-            "dev-master": "4.3-dev"
+            "dev-master": "4.4-dev"
         }
     }
 }

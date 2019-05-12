@@ -25,6 +25,7 @@
     },
     "require-dev": {
         "symfony/stopwatch": "~3.4|~4.0",
+        "symfony/config": "^4.2",
         "symfony/dependency-injection": "~3.4|~4.0",
         "symfony/form": "~4.3",
         "symfony/http-kernel": "~3.4|~4.0",
@@ -67,7 +68,7 @@
     "minimum-stability": "dev",
     "extra": {
         "branch-alias": {
-            "dev-master": "4.3-dev"
+            "dev-master": "4.4-dev"
         }
     }
 }

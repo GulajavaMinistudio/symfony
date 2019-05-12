@@ -22,7 +22,7 @@
         "doctrine/event-manager": "~1.0",
         "doctrine/persistence": "~1.0",
         "fig/link-util": "^1.0",
-        "twig/twig": "^1.40|^2.9",
+        "twig/twig": "^1.41|^2.10",
         "psr/cache": "~1.0",
         "psr/container": "^1.0",
         "psr/link": "^1.0",
@@ -146,7 +146,7 @@
     "minimum-stability": "dev",
     "extra": {
         "branch-alias": {
-            "dev-master": "4.3-dev"
+            "dev-master": "4.4-dev"
         }
     }
 }
