@@ -42,13 +42,13 @@ class ConnectionTest extends TestCase
     public function testFromDsnWithOptions()
     {
         $this->assertEquals(
-            new Connection(['stream' => 'queue', 'group' => 'group1', 'consumer' => 'consumer1'], [
+            new Connection(['stream' => 'queue', 'group' => 'group1', 'consumer' => 'consumer1', 'auto_setup' => false], [
                 'host' => 'localhost',
                 'port' => 6379,
             ], [
-                'blocking_timeout' => 30,
+                'serializer' => 2,
             ]),
-            Connection::fromDsn('redis://localhost/queue/group1/consumer1', ['blocking_timeout' => 30])
+            Connection::fromDsn('redis://localhost/queue/group1/consumer1', ['serializer' => 2, 'auto_setup' => false])
         );
     }
 
@@ -59,9 +59,9 @@ class ConnectionTest extends TestCase
                 'host' => 'localhost',
                 'port' => 6379,
             ], [
-                'blocking_timeout' => 30,
+                'serializer' => 2,
             ]),
-            Connection::fromDsn('redis://localhost/queue/group1/consumer1?blocking_timeout=30')
+            Connection::fromDsn('redis://localhost/queue/group1/consumer1?serializer=2')
         );
     }
 
@@ -117,10 +117,6 @@ class ConnectionTest extends TestCase
     {
         $redis = new \Redis();
         $connection = Connection::fromDsn('redis://localhost/messenger-rejectthenget', [], $redis);
-        try {
-            $connection->setup();
-        } catch (TransportException $e) {
-        }
 
         $connection->add('1', []);
         $connection->add('2', []);
@@ -134,16 +130,16 @@ class ConnectionTest extends TestCase
         $redis->del('messenger-rejectthenget');
     }
 
-    public function testBlockingTimeout()
+    public function testGetNonBlocking()
     {
         $redis = new \Redis();
-        $connection = Connection::fromDsn('redis://localhost/messenger-blockingtimeout', ['blocking_timeout' => 1], $redis);
-        try {
-            $connection->setup();
-        } catch (TransportException $e) {
-        }
 
-        $this->assertNull($connection->get());
-        $redis->del('messenger-blockingtimeout');
+        $connection = Connection::fromDsn('redis://localhost/messenger-getnonblocking', [], $redis);
+
+        $this->assertNull($connection->get()); // no message, should return null immediately
+        $connection->add('1', []);
+        $this->assertNotEmpty($message = $connection->get());
+        $connection->reject($message['id']);
+        $redis->del('messenger-getnonblocking');
     }
 }
