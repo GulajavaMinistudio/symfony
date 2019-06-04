@@ -1,6 +1,12 @@
 CHANGELOG
 =========
 
+4.4.0
+-----
+
+ * marked the `TemplateIterator` as `internal`
+ * added HTML comment to beginning and end of `exception_full.html.twig`
+
 4.2.0
 -----
 
