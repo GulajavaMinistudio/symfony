@@ -9,13 +9,17 @@
  * file that was distributed with this source code.
  */
 
-namespace Symfony\Component\Config\Definition\Exception;
+namespace Symfony\Bridge\Doctrine\Tests\Fixtures;
+
+use Doctrine\ORM\Mapping as ORM;
 
 /**
- * @author Roland Franssen <franssen.roland@gmail.com>
- *
- * @internal
+ * @ORM\Embeddable()
  */
-class TreeWithoutRootNodeException extends \RuntimeException
+class DoctrineLoaderNestedEmbed
 {
+    /**
+     * @ORM\Column(length=27)
+     */
+    public $nestedEmbeddedMaxLength;
 }
